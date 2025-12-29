@@ -1,0 +1,43 @@
+/* limit.css – uses your existing variables/colors */
+:root { color-scheme: dark; }
+
+/* Banner wrapper */
+.limit-banner {
+  --bg: var(--surface-2);
+  --fg: var(--text);
+  --border: var(--border);
+  --accent: var(--primary);
+
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 16px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(0,194,255,.08), rgba(0,194,255,.04));
+  border-radius: 12px;
+  box-shadow: var(--shadow-1);
+}
+
+.limit-banner .title {
+  font-weight: 700;
+}
+
+.limit-banner .desc {
+  color: var(--muted);
+  margin-top: 2px;
+  font-size: 0.92rem;
+}
+
+.limit-banner .act {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #00131c;
+  border: 1px solid transparent;
+  cursor: not-allowed; /* placeholder until you wire payments */
+}

@@ -1,0 +1,226 @@
+/* lucia-secure/frontend/src/styles/chat-layout.css */
+
+/* Content width and sidebar variables */
+:root {
+  --content-w: 820px;
+  --sidebar-width: 280px;
+}
+
+/* ================== BASE STYLES ================== */
+
+.thread {
+  width: min(100%, var(--content-w));
+  max-width: var(--content-w);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.limit-banner {
+  width: min(100%, var(--content-w));
+  max-width: var(--content-w);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Bottom usage indicator chip */
+.usage-indicator.bottom-chip {
+  width: min(100%, var(--content-w));
+  max-width: var(--content-w);
+  margin: 8px auto 0 auto;
+}
+
+/* ================== BUBBLE BASE STYLES ================== */
+.bubble {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-1);
+  animation: fadeUp 0.18s ease;
+}
+
+.bubble.assistant {
+  background: linear-gradient(180deg, rgba(0,194,255,.08), rgba(0,194,255,.05));
+}
+
+.bubble.user {
+  background: linear-gradient(180deg, rgba(0,194,255,.35), rgba(0,194,255,.18));
+  border-color: #0e7aa5;
+}
+
+.bubble .role {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ================== DESKTOP (1025px and up) ================== */
+@media (min-width: 1025px) {
+  /* Desktop bubble positioning */
+  .bubble.assistant {
+    max-width: 75%;
+    margin-left: 0;
+    margin-right: auto; /* Left side */
+  }
+  
+  .bubble.user {
+    max-width: 65%;
+    margin-left: auto;
+    margin-right: 0; /* Right side */
+  }
+  
+  /* Desktop composer positioning */
+  .composer-row {
+    left: calc(
+      var(--sidebar-width) + max(12px,
+        ((100vw - var(--sidebar-width)) - var(--content-w)) / 2
+      )
+    );
+    right: calc(
+      max(12px,
+        ((100vw - var(--sidebar-width)) - var(--content-w)) / 2
+      )
+    );
+  }
+}
+
+/* Very wide screens - increase content width */
+@media (min-width: 1400px) {
+  :root {
+    --content-w: 900px;
+  }
+}
+
+/* Medium-large screens */
+@media (max-width: 1399px) and (min-width: 1025px) {
+  :root {
+    --content-w: 820px;
+  }
+}
+
+/* ================== TABLET (769px - 1024px) ================== */
+@media (max-width: 1024px) and (min-width: 769px) {
+  :root {
+    --sidebar-width: 240px;
+    --content-w: 680px;
+  }
+  
+  .thread,
+  .limit-banner {
+    width: min(100%, var(--content-w));
+    max-width: var(--content-w);
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  
+  /* Tablet bubble positioning */
+  .bubble.assistant {
+    max-width: 80%;
+    margin-left: 0;
+    margin-right: auto; /* Left side */
+  }
+  
+  .bubble.user {
+    max-width: 70%;
+    margin-left: auto;
+    margin-right: 0; /* Right side */
+  }
+  
+  /* Tablet composer positioning */
+  .composer-row {
+    left: calc(
+      var(--sidebar-width) + max(20px,
+        ((100vw - var(--sidebar-width)) - var(--content-w)) / 2
+      )
+    );
+    right: calc(
+      max(20px,
+        ((100vw - var(--sidebar-width)) - var(--content-w)) / 2
+      )
+    );
+  }
+}
+
+/* ================== MOBILE (768px and below) ================== */
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 280px; /* Reset for mobile calculations */
+  }
+  
+  /* Full width layout on mobile - remove constraints */
+  .thread {
+    width: 100%;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  
+  .limit-banner {
+    max-width: 100%;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  
+  /* Mobile bubble positioning - consistent margins */
+  .bubble.assistant {
+    max-width: calc(100% - 60px);
+    margin-left: 8px;
+    margin-right: auto;
+  }
+  
+  .bubble.user {
+    max-width: calc(100% - 60px);
+    margin-left: auto;
+    margin-right: 8px;
+  }
+  
+  /* Smaller padding on mobile */
+  .bubble {
+    padding: 14px 16px;
+  }
+  
+  /* Hide bottom usage chip on mobile */
+  .usage-indicator.bottom-chip {
+    display: none;
+  }
+  
+  /* Mobile composer positioning */
+  .composer-row {
+    left: auto;
+    right: auto;
+    position: relative;
+    max-width: 100%;
+  }
+  
+  /* Adjust thread padding for mobile composer */
+  .thread {
+    padding-bottom: calc(var(--composer-h, 72px) + 16px);
+  }
+}
+
+/* ================== SAFE AREA HANDLING (Mobile only) ================== */
+@media (max-width: 768px) {
+  .thread {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+  
+  .composer-row {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+}
+
+/* ================== ACCESSIBILITY (Mobile only) ================== */
+@media (max-width: 768px) {
+  .bubble {
+    margin-bottom: 12px;
+  }
+  
+  .bubble:last-child {
+    margin-bottom: 0;
+  }
+}

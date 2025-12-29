@@ -1,0 +1,34 @@
+/* lucia-secure/frontend/src/styles/slots.css  (new) */
+
+/* one-per-line layout for conversation list */
+.slots-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+.slots-list .slot-btn {
+  width: 100%;
+  text-align: left;
+}
+
+/* loading skeleton for Slots */
+.slots-skeleton {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+.slot-row {
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0.06) 0%,
+    rgba(255,255,255,0.12) 50%,
+    rgba(255,255,255,0.06) 100%);
+  background-size: 200% 100%;
+  animation: slots-shimmer 1.2s infinite linear;
+}
+@keyframes slots-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

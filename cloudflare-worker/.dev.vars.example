@@ -1,0 +1,7 @@
+# copy to .dev.vars and fill values for local wrangler dev
+DUMMY_MODE="true"
+DEEPSEEK_API_URL="https://api.deepseek.com/v1/chat/completions"
+DEEPSEEK_MODEL="deepseek-chat"
+DEEPSEEK_API_KEY="sk-xxxxxxxx"
+# Optional if you use Cloudflare AI Gateway instead of direct DeepSeek:
+GATEWAY_URL="https://gateway.ai.cloudflare.com/v1/<account_id>/<gateway_id>/deepseek"

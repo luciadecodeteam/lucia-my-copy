@@ -1,0 +1,98 @@
+/* Lucia is Listening - Loading State */
+.lucia-listening {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  gap: 20px;
+  min-height: 200px;
+}
+
+.lucia-listening-text {
+  font-size: 1.1rem;
+  color: var(--text);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+.lucia-listening-subtext {
+  font-size: 0.9rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: -8px;
+}
+
+/* Dual Color Spinner */
+.lucia-spinner {
+  position: relative;
+  width: 40px;
+  height: 40px;
+}
+
+.lucia-spinner::before,
+.lucia-spinner::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  animation: lucia-spin 1.5s linear infinite;
+}
+
+.lucia-spinner::before {
+  width: 40px;
+  height: 40px;
+  border-top-color: var(--primary); /* Blue */
+  border-right-color: var(--primary);
+  animation-duration: 1.2s;
+}
+
+.lucia-spinner::after {
+  width: 32px;
+  height: 32px;
+  top: 4px;
+  left: 4px;
+  border-top-color: var(--core); /* Red */
+  border-left-color: var(--core);
+  animation-duration: 1.8s;
+  animation-direction: reverse;
+}
+
+@keyframes lucia-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .lucia-listening {
+    padding: 32px 16px;
+    min-height: 160px;
+  }
+  
+  .lucia-listening-text {
+    font-size: 1rem;
+  }
+  
+  .lucia-spinner {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .lucia-spinner::before {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .lucia-spinner::after {
+    width: 28px;
+    height: 28px;
+    top: 4px;
+    left: 4px;
+  }
+}

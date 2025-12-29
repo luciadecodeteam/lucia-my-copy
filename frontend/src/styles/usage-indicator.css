@@ -1,0 +1,68 @@
+/* lucia-secure/frontend/src/styles/usage-indicator.css */
+
+/* Base */
+.usage-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 999px;
+  box-shadow: var(--shadow-1);
+  font: 600 12px/1 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial;
+  color: var(--text);
+}
+
+/* Status dot with glow */
+.usage-indicator__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  box-shadow: 0 0 10px currentColor, 0 0 18px color-mix(in oklab, currentColor 55%, transparent);
+}
+
+/* Count badge */
+.usage-indicator__count {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid var(--border);
+  min-width: 28px;
+  text-align: center;
+}
+
+/* Labels */
+.usage-indicator__label {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* States with glow ring */
+.usage-indicator--ok .usage-indicator__dot { color: #20d37a; }
+.usage-indicator--ok {
+  border-color: rgba(32,211,122,.35);
+  box-shadow: 0 0 0 1px rgba(32,211,122,.18), var(--shadow-1);
+}
+
+.usage-indicator--warn .usage-indicator__dot { color: var(--primary); }
+.usage-indicator--warn {
+  border-color: color-mix(in oklab, var(--primary) 45%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--primary) 25%, transparent), var(--shadow-1);
+}
+
+.usage-indicator--bad .usage-indicator__dot { color: var(--core); }
+.usage-indicator--bad {
+  border-color: color-mix(in oklab, var(--core) 45%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--core) 25%, transparent), var(--shadow-1);
+}
+
+/* Compact */
+.usage-indicator--sm { padding: 4px 8px; gap: 6px; }
+.usage-indicator--sm .usage-indicator__count { min-width: 24px; padding: 1px 6px; }
+
+/* Fallback */
+@supports not (color: color-mix(in oklab, #000 50%, #fff 50%)) {
+  .usage-indicator--warn { border-color: rgba(0,194,255,.35); }
+  .usage-indicator--bad  { border-color: rgba(255,71,87,.45); }
+}
