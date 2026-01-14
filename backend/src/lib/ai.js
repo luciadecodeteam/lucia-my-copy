@@ -4,16 +4,18 @@ const { getSecretValue, parseSecretValue } = require('./secrets');
 let promptTemplatePromise = null;
 
 function getProxyUrl() {
-  return (process.env.OPENAI_PROXY_URL || 'https://tsqwdm45h22gxxvxoyflrpoj7m0eewmb.lambda-url.eu-west-1.on.aws/').trim();
+  // Prefer AI_PROXY_URL, fallback to OPENAI_PROXY_URL for compat
+  return (process.env.AI_PROXY_URL || process.env.OPENAI_PROXY_URL || 'https://tsqwdm45h22gxxvxoyflrpoj7m0eewmb.lambda-url.eu-west-1.on.aws/').trim();
 }
 
 async function loadPromptTemplate() {
   if (!promptTemplatePromise) {
     promptTemplatePromise = (async () => {
-      if (process.env.OPENAI_SYSTEM_PROMPT) {
-        return process.env.OPENAI_SYSTEM_PROMPT;
+      // Check for generic or specific env vars
+      if (process.env.AI_SYSTEM_PROMPT || process.env.OPENAI_SYSTEM_PROMPT) {
+        return process.env.AI_SYSTEM_PROMPT || process.env.OPENAI_SYSTEM_PROMPT;
       }
-      const secretId = (process.env.LUCIA_OPENAI_PROMPT_SECRET || '').trim();
+      const secretId = (process.env.LUCIA_PROMPT_SECRET || process.env.LUCIA_OPENAI_PROMPT_SECRET || '').trim();
       if (!secretId) {
         return null;
       }
@@ -24,7 +26,7 @@ async function loadPromptTemplate() {
         if (typeof parsed === 'string') return parsed;
         return parsed.prompt || parsed.systemPrompt || null;
       } catch (err) {
-        console.warn('Failed to load OpenAI prompt secret', err?.message);
+        console.warn('Failed to load AI prompt secret', err?.message);
         return null;
       }
     })();
@@ -32,43 +34,62 @@ async function loadPromptTemplate() {
   return promptTemplatePromise;
 }
 
-async function callOpenAI(prompt, options = {}) {
+async function callAI(prompt, options = {}) {
   if (!prompt) {
     throw new Error('Prompt is required');
   }
   const url = getProxyUrl();
   if (!url) {
-    throw new Error('OpenAI proxy URL not configured');
+    throw new Error('AI proxy URL not configured');
   }
+  
   const systemPrompt = await loadPromptTemplate();
+  
+  // Construct Chat Payload (Standardized)
+  const messages = [];
+  if (systemPrompt) {
+      messages.push({ role: 'system', content: systemPrompt });
+  }
+  messages.push({ role: 'user', content: prompt });
+  
   const payload = {
-    prompt,
-    ...(systemPrompt ? { systemPrompt } : {}),
+    mode: 'chat',
+    messages,
     ...options,
   };
+
   try {
     const response = await axios.post(url, payload, {
-      timeout: Number(process.env.OPENAI_PROXY_TIMEOUT_MS || 30000),
+      timeout: Number(process.env.AI_PROXY_TIMEOUT_MS || process.env.OPENAI_PROXY_TIMEOUT_MS || 30000),
       headers: {
         'Content-Type': 'application/json',
       },
     });
+    
     const data = response?.data;
     if (!data) {
-      throw new Error('Empty response from OpenAI proxy');
+      throw new Error('Empty response from AI proxy');
     }
+
+    // New Proxy returns { ok: true, reply: "..." }
+    if (data.reply) return data.reply;
+    
+    // Legacy handling (just in case)
     if (typeof data === 'string') return data;
     if (data.result) return data.result;
     if (data.output) return data.output;
+    
     const choice = data.choices && data.choices[0];
     if (choice?.message?.content) return choice.message.content;
     if (choice?.text) return choice.text;
+    
     return JSON.stringify(data);
+
   } catch (err) {
-    const message = err?.response?.data?.error || err?.message || 'OpenAI proxy request failed';
-    console.error('OpenAI proxy error', { message });
+    const message = err?.response?.data?.error || err?.response?.data?.reason || err?.message || 'AI proxy request failed';
+    console.error('AI proxy error', { message });
     throw new Error(message);
   }
 }
 
-module.exports = { callOpenAI };
+module.exports = { callAI };

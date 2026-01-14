@@ -63,33 +63,59 @@ function validatePayload(payload) {
   return { ok: true, messages };
 }
 
-async function callOpenAI(messages) {
-  const apiBase = process.env.OPENAI_API_URL || "https://api.openai.com/v1/chat/completions";
-  const apiKey = process.env.OPENAI_API_KEY || "";
+async function callGemini(messages) {
+  // Default to Gemini 1.5 Flash
+  const model = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+  const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || ""; // Fallback for transition
+  const apiBase = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
   if (!apiKey) {
-    return { ok: false, code: "missing_api_key", reason: "OPENAI_API_KEY environment variable is not set." };
+    return { ok: false, code: "missing_api_key", reason: "GEMINI_API_KEY environment variable is not set." };
   }
 
+  // Convert OpenAI messages to Gemini contents
+  const contents = messages.map((msg) => {
+    const role = msg.role === "assistant" ? "model" : "user";
+    return {
+      role,
+      parts: [{ text: msg.content }],
+    };
+  });
+
   const payload = {
-    model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-    messages,
+    contents,
   };
 
-  if (process.env.OPENAI_TEMPERATURE) {
-    const temperature = Number(process.env.OPENAI_TEMPERATURE);
+  // Map system prompt if it exists as a separate conceptual role (Gemini uses 'system_instruction' but strictly 'user'/'model' in contents for chat)
+  // For simplicity in this proxy, we treat system messages as user messages or prepended context if passed in messages.
+  // However, Gemini API supports system_instruction separately. 
+  // If the first message is 'system', we can move it to system_instruction.
+  if (messages.length > 0 && messages[0].role === "system") {
+    payload.system_instruction = {
+      parts: [{ text: messages[0].content }]
+    };
+    // Remove it from contents
+    payload.contents.shift();
+  }
+  
+  // If contents is empty after removing system message, add a dummy user message to avoid API error
+  if (payload.contents.length === 0) {
+      payload.contents.push({ role: "user", parts: [{ text: "Hello" }] });
+  }
+
+  if (process.env.GEMINI_TEMPERATURE) {
+    const temperature = Number(process.env.GEMINI_TEMPERATURE);
     if (!Number.isNaN(temperature)) {
-      payload.temperature = temperature;
+      payload.generationConfig = { temperature };
     }
   }
 
   let response;
   try {
-    response = await fetch(apiBase, {
+    response = await fetch(`${apiBase}?key=${apiKey}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(payload),
     });
@@ -97,7 +123,7 @@ async function callOpenAI(messages) {
     return {
       ok: false,
       code: "network_error",
-      reason: error?.message || "Failed to reach OpenAI API.",
+      reason: error?.message || "Failed to reach Gemini API.",
     };
   }
 
@@ -109,7 +135,7 @@ async function callOpenAI(messages) {
     return {
       ok: false,
       code: "invalid_upstream_body",
-      reason: error?.message || "OpenAI response was not valid JSON.",
+      reason: error?.message || "Gemini response was not valid JSON.",
     };
   }
 
@@ -117,7 +143,7 @@ async function callOpenAI(messages) {
     return {
       ok: false,
       code: "upstream_error",
-      reason: `OpenAI request failed with status ${response.status}.`,
+      reason: `Gemini request failed with status ${response.status}.`,
       data,
     };
   }
@@ -156,6 +182,15 @@ export const handler = async (event) => {
     });
   }
 
+  // Adapter for legacy { prompt } payloads (e.g. from Backend directly)
+  if (payload && payload.prompt && !payload.messages) {
+    payload.mode = "chat";
+    payload.messages = [{ role: "user", content: payload.prompt }];
+    if (payload.systemPrompt) {
+       payload.messages.unshift({ role: "system", content: payload.systemPrompt });
+    }
+  }
+
   let validation;
   try {
     validation = validatePayload(payload);
@@ -171,19 +206,15 @@ export const handler = async (event) => {
     return jsonResponse(400, validation);
   }
 
-  const upstream = await callOpenAI(validation.messages);
+  const upstream = await callGemini(validation.messages);
   if (!upstream.ok) {
     const statusCode = upstream.code === "network_error" || upstream.code === "missing_api_key" ? 500 : 502;
     return jsonResponse(statusCode, upstream);
   }
 
-  const firstChoice = upstream.data?.choices?.[0];
-  const reply =
-    typeof firstChoice?.message?.content === "string"
-      ? firstChoice.message.content
-      : typeof firstChoice?.text === "string"
-      ? firstChoice.text
-      : null;
+  // Gemini Response Parsing
+  const candidate = upstream.data?.candidates?.[0];
+  const reply = candidate?.content?.parts?.[0]?.text || null;
 
   if (reply === null) {
     return jsonResponse(502, {
