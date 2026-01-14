@@ -92,6 +92,8 @@ function buildTierPriceCache() {
     medium: read(["PRICE_MEDIUM", "STRIPE_PRICE_MEDIUM", "VITE_STRIPE_PRICE_MEDIUM"]),
     intensive: read(["PRICE_INTENSIVE", "STRIPE_PRICE_INTENSIVE", "VITE_STRIPE_PRICE_INTENSIVE"]),
     total: read(["PRICE_TOTAL", "STRIPE_PRICE_TOTAL", "VITE_STRIPE_PRICE_TOTAL"]),
+    weekly: read(["PRICE_WEEKLY", "STRIPE_PRICE_WEEKLY", "VITE_STRIPE_PRICE_WEEKLY"]),
+    monthly: read(["PRICE_MONTHLY", "STRIPE_PRICE_MONTHLY", "VITE_STRIPE_PRICE_MONTHLY"]),
   };
   return tierPriceCache;
 }

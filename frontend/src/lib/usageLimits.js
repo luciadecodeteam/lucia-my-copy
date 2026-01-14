@@ -118,7 +118,7 @@ export function resolveUsageLimits(profile) {
     };
   }
 
-  if (tier === "pro") {
+  if (tier === "pro" || tier === "weekly" || tier === "monthly") {
     return {
       unlimited: true,
       baseAllowance: null,

@@ -4,10 +4,8 @@ import { startCheckout, stripeEnabled } from '../lib/api';
 import '../styles/pricing.css';
 
 const PLANS = [
-  { key: 'BASIC',     tier: 'basic',     name: 'Basic',     price: '€20', note: '200 messages / mo',   priceId: 'price_1SCmlh2NCNcgXLO1toUJyGKF' },
-  { key: 'MEDIUM',    tier: 'medium',    name: 'Medium',    price: '€30', note: '400 messages / mo',   priceId: 'price_1SCmpr2NCNcgXLO1F9HxJDrO' },
-  { key: 'INTENSIVE', tier: 'intensive', name: 'Intensive', price: '€50', note: '2,000 messages / mo', priceId: 'price_1SCmqu2NCNcgXLO1B4kwuXmt' },
-  { key: 'TOTAL',     tier: 'total',     name: 'Total',     price: '€90', note: '6,000+ messages / mo',priceId: 'price_1SCmrg2NCNcgXLO1dIBQ75vR' },
+  { key: 'WEEKLY',  tier: 'weekly',  name: 'Weekly',  price: '€4.99',  note: 'Unlimited messages', priceId: import.meta.env.VITE_STRIPE_PRICE_WEEKLY || 'price_WEEKLY_PLACEHOLDER' },
+  { key: 'MONTHLY', tier: 'monthly', name: 'Monthly', price: '€14.99', note: 'Unlimited messages', priceId: import.meta.env.VITE_STRIPE_PRICE_MONTHLY || 'price_MONTHLY_PLACEHOLDER' },
 ];
 
 export default function Pricing({ onClose }) {
@@ -23,7 +21,7 @@ export default function Pricing({ onClose }) {
       alert('Checkout is temporarily unavailable. Please try again later.');
       return;
     }
-    if (!plan?.priceId) {
+    if (!plan?.priceId || plan.priceId.includes('PLACEHOLDER')) {
       alert('This plan is not configured yet. Please contact support.');
       return;
     }
@@ -45,7 +43,7 @@ export default function Pricing({ onClose }) {
         </div>
 
         <p className="pricing-subtext">
-          EUR • Monthly billing • No Stripe trials (app uses 12-message courtesy).
+          EUR • Cancel anytime • No subscription trial.
         </p>
 
         <div className="plan-grid">
