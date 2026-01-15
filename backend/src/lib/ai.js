@@ -5,7 +5,7 @@ let promptTemplatePromise = null;
 
 function getProxyUrl() {
   // Prefer AI_PROXY_URL, fallback to OPENAI_PROXY_URL for compat
-  return (process.env.AI_PROXY_URL || process.env.OPENAI_PROXY_URL || 'https://tsqwdm45h22gxxvxoyflrpoj7m0eewmb.lambda-url.eu-west-1.on.aws/').trim();
+  return (process.env.AI_PROXY_URL || process.env.OPENAI_PROXY_URL || 'https://acmjtgoc47eieiii6gksw3bx6u0feemy.lambda-url.eu-west-1.on.aws/').trim();
 }
 
 async function loadPromptTemplate() {

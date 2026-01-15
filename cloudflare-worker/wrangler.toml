@@ -8,4 +8,4 @@ workers_dev = true
 # Optional defaults (you can override in dashboard)
 OPENAI_MODEL = "gpt-4o-mini"
 ALLOW_ORIGIN = "*"
-OPENAI_PROXY_URL = "https://tsqwdm45h22gxxvxoyflrpoj7m0eewmb.lambda-url.eu-west-1.on.aws/"
+OPENAI_PROXY_URL = "https://acmjtgoc47eieiii6gksw3bx6u0feemy.lambda-url.eu-west-1.on.aws/"
