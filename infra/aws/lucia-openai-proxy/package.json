@@ -2,6 +2,6 @@
   "type": "module",
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "^3.609.0",
-    "@google-cloud/vertexai": "^1.1.0"
+    "google-auth-library": "^9.10.0"
   }
 }

@@ -1,5 +1,5 @@
-import { VertexAI } from '@google-cloud/vertexai';
-import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
+// Google Gemini proxy via Secrets Manager (GOOGLE_SECRET_ID)
+import { GoogleAuth } from "google-auth-library";
 
 const DEFAULT_ORIGIN = process.env.ALLOW_ORIGIN || "*";
 const ALLOW_METHODS = "POST,OPTIONS";
@@ -12,159 +12,141 @@ const corsBaseHeaders = Object.freeze({
   "Access-Control-Max-Age": "86400",
 });
 
-function withCors(headers = {}) {
-  return { ...corsBaseHeaders, ...headers };
-}
-
-function jsonResponse(statusCode, body, extraHeaders) {
+function withCors(extra = {}) { return { ...corsBaseHeaders, ...extra }; }
+function noContent() { return { statusCode: 204, headers: withCors(), body: "" }; }
+function json(statusCode, body, extraHeaders) {
   return {
     statusCode,
     headers: withCors({ "Content-Type": "application/json; charset=utf-8", ...extraHeaders }),
-    body: JSON.stringify(body),
+    body: JSON.stringify(body)
   };
 }
-
-function noContentResponse(statusCode = 204) {
-  return {
-    statusCode,
-    headers: withCors(),
-    body: "",
-  };
-}
-
-// --- Secrets Management ---
-const secretsClient = new SecretsManagerClient({ region: process.env.AWS_REGION || 'eu-west-1' });
-let cachedServiceAccount = null;
-
-async function getGoogleCredentials() {
-  if (cachedServiceAccount) return cachedServiceAccount;
-
-  const secretName = process.env.GCP_SERVICE_ACCOUNT_SECRET_NAME || 'lucia/gcp-service-account';
-  
-  try {
-    const command = new GetSecretValueCommand({ SecretId: secretName });
-    const response = await secretsClient.send(command);
-    
-    let secret = response.SecretString;
-    if (!secret && response.SecretBinary) {
-      secret = Buffer.from(response.SecretBinary, 'base64').toString('utf-8');
-    }
-    
-    if (!secret) throw new Error('Secret is empty');
-    
-    cachedServiceAccount = JSON.parse(secret);
-    return cachedServiceAccount;
-  } catch (err) {
-    console.error('Failed to retrieve GCP credentials from Secrets Manager:', err);
-    throw err;
-  }
-}
-
-// --- Vertex AI Client ---
-let vertexClient = null;
-
-async function getVertexClient() {
-  if (vertexClient) return vertexClient;
-
-  const credentials = await getGoogleCredentials();
-  const projectId = process.env.GCP_PROJECT_ID || credentials.project_id;
-  
-  if (!projectId) throw new Error('GCP Project ID not found in env or credentials');
-
-  vertexClient = new VertexAI({
-    project: projectId,
-    location: process.env.GCP_LOCATION || 'us-central1',
-    googleAuthOptions: {
-      credentials,
-      scopes: ['https://www.googleapis.com/auth/cloud-platform']
-    }
-  });
-  
-  return vertexClient;
-}
-
-// --- Handler ---
 
 function decodeBody(event) {
   if (!event?.body) return "";
   try {
-    return event.isBase64Encoded ? Buffer.from(event.body, "base64").toString("utf8") : event.body;
-  } catch (err) {
+    return event.isBase64Encoded
+      ? Buffer.from(event.body, "base64").toString("utf8")
+      : event.body;
+  } catch {
     return null;
   }
 }
 
+function validate(payload) {
+  if (payload?.mode !== "chat")
+    return { ok: false, code: "invalid_mode", reason: 'Expected payload.mode to be "chat".' };
+
+  if (!Array.isArray(payload.messages) || payload.messages.length === 0)
+    return { ok: false, code: "invalid_messages", reason: "messages must be a non-empty array." };
+
+  const messages = payload.messages.map((m, i) => {
+    const role = typeof m?.role === "string" ? m.role : null;
+    const content = typeof m?.content === "string" ? m.content : null;
+    if (!role || !content)
+      throw new Error(`Message at index ${i} is missing role or content.`);
+    return { role, content };
+  });
+
+  return { ok: true, messages };
+}
+
+// AWS SDK v3
+import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
+
+const sm = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-1" });
+let GOOGLE_KEY_CACHE = null;
+
+async function getGoogleKey() {
+  const secretId = (process.env.GOOGLE_SECRET_ID || "").trim();
+  if (!secretId) return null;
+  if (GOOGLE_KEY_CACHE) return GOOGLE_KEY_CACHE;
+
+  const out = await sm.send(new GetSecretValueCommand({ SecretId: secretId }));
+  const str =
+    out.SecretString ||
+    (out.SecretBinary ? Buffer.from(out.SecretBinary, "base64").toString("utf8") : "");
+
+  if (!str) return null;
+
+  let obj;
+  try { obj = JSON.parse(str); } catch { obj = {}; }
+
+  const key = (obj.GOOGLE_API_KEY || obj.apiKey || "").trim();
+  if (!key) return null;
+
+  GOOGLE_KEY_CACHE = key;
+  return key;
+}
+
 export const handler = async (event) => {
-  // CORS Preflight
-  const method = (event?.httpMethod || event?.requestContext?.http?.method || "").toUpperCase();
-  if (method === "OPTIONS") return noContentResponse();
-  if (method !== "POST") return jsonResponse(405, { ok: false, error: "Only POST is supported" });
+  const method = (event?.httpMethod || event?.requestContext?.http?.method || "GET").toUpperCase();
+  if (method === "OPTIONS") return noContent();
+  if (method !== "POST")
+    return json(405, { ok: false, code: "method_not_allowed", reason: "Only POST is supported." });
 
-  try {
-    // 1. Parse Body
-    const rawBody = decodeBody(event);
-    if (!rawBody) return jsonResponse(400, { ok: false, error: "Empty body" });
-    const payload = JSON.parse(rawBody);
+  const raw = decodeBody(event);
+  if (raw === null)
+    return json(400, { ok: false, code: "invalid_encoding", reason: "Body could not be decoded." });
 
-    // 2. Normalize Payload (support legacy { prompt } and standard { messages })
-    const messages = payload.messages || [];
-    if (messages.length === 0 && payload.prompt) {
-      if (payload.systemPrompt) messages.push({ role: 'system', content: payload.systemPrompt });
-      messages.push({ role: 'user', content: payload.prompt });
-    }
+  let payload;
+  try { payload = raw ? JSON.parse(raw) : {}; }
+  catch {
+    return json(400, { ok: false, code: "invalid_json", reason: "Body must be valid JSON." });
+  }
 
-    if (messages.length === 0) {
-      return jsonResponse(400, { ok: false, error: "No messages or prompt provided" });
-    }
+  let validation;
+  try { validation = validate(payload); }
+  catch (e) {
+    return json(400, { ok: false, code: "invalid_message", reason: e?.message });
+  }
+  if (!validation.ok) return json(400, validation);
 
-    // 3. Initialize Vertex AI
-    const vertex = await getVertexClient();
-    const modelName = process.env.VERTEX_MODEL || 'gemini-1.5-flash-001';
-    
-    const generativeModel = vertex.getGenerativeModel({
-      model: modelName,
-      generationConfig: {
-        maxOutputTokens: 2048,
-        temperature: 0.7,
-      }
+  const apiKey = await getGoogleKey();
+  if (!apiKey)
+    return json(500, {
+      ok: false,
+      code: "missing_api_key",
+      reason: "No key via GOOGLE_SECRET_ID."
     });
 
-    // 4. Convert Messages to Vertex Format
-    // Vertex expects: { role: 'user'|'model', parts: [{ text: '...' }] }
-    // System instructions are handled separately in newer SDKs, but often prepended to context in chat.
-    // For this simple proxy, we will map 'system' to 'user' or use systemInstruction if supported.
-    
-    const contents = [];
-    let systemInstruction = undefined;
+  // Map OpenAI-style messages to Gemini contents
+  const contents = validation.messages.map(m => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: [{ text: m.content }]
+  }));
 
-    for (const msg of messages) {
-      if (msg.role === 'system') {
-        systemInstruction = { parts: [{ text: msg.content }] };
-      } else {
-        contents.push({
-          role: msg.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: msg.content }]
-        });
-      }
-    }
+  const model = process.env.GOOGLE_MODEL || "gemini-2.5-flash";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-    // 5. Generate Content
-    const result = await generativeModel.generateContent({
-      contents,
-      systemInstruction,
-    });
-    
-    const response = await result.response;
-    const reply = response.candidates[0]?.content?.parts[0]?.text || "";
+  const upstream = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ contents })
+  }).catch(e => ({ ok: false, error: e }));
 
-    return jsonResponse(200, { ok: true, reply });
-
-  } catch (err) {
-    console.error('Vertex Proxy Error:', err);
-    return jsonResponse(502, { 
-      ok: false, 
-      error: "Upstream AI Error", 
-      details: err.message 
+  if (!upstream || upstream.ok === false && !upstream.status) {
+    return json(500, {
+      ok: false,
+      code: "network_error",
+      reason: upstream?.error?.message || "Failed to reach Google."
     });
   }
+
+  const text = await upstream.text();
+  let data;
+  try { data = text ? JSON.parse(text) : {}; }
+  catch (e) {
+    return json(502, {
+      ok: false,
+      code: "invalid_upstream_body",
+      reason: e?.message || "Google JSON invalid.",
+      raw: text
+    });
+  }
+
+  if (!upstream.ok)
+    return json(502, { ok: false, code: "upstream_error", reason: `Google ${upstream.status}`, data });
+
+  return json(200, { ok: true, data });
 };
