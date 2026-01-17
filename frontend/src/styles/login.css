@@ -95,6 +95,13 @@
 }
 .google-btn:hover{ opacity:1; }
 
+.demo-btn{
+  width:100%; padding:10px; border-radius: var(--radius-2);
+  border:none; cursor:pointer; font-weight:700;
+  background: #2196F3; color:#fff; opacity:.92;
+}
+.demo-btn:hover{ opacity:1; }
+
 /* Divider + messages */
 .divider{ text-align:center; margin:12px 0; color: var(--text); opacity:.6; }
 

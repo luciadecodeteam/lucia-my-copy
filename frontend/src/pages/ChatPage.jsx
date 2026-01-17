@@ -157,6 +157,8 @@ export default function ChatPage() {
   const [showLogin, setShowLogin] = useState(false)
   const [system] = useState(DEFAULT_SYSTEM)
   const [conversationId, setConversationId] = useState(() => new URLSearchParams(window.location.search).get("c") || null)
+  const [isDemoMode] = useState(() => new URLSearchParams(window.location.search).get("demo") === "true");
+  const [demoSessionId, setDemoSessionId] = useState(() => sessionStorage.getItem('demoSessionId') || null);
 
   // NEW: Legal overlay state
   const getPageFromURL = () => {
@@ -173,6 +175,7 @@ export default function ChatPage() {
 
   // Email link sign-in
   useEffect(() => {
+    if (isDemoMode) return;
     (async () => {
       try {
         const href = window.location.href
@@ -197,17 +200,19 @@ export default function ChatPage() {
         console.error("Email link completion failed:", e)
       }
     })()
-  }, [])
+  }, [isDemoMode])
 
   // Sidebar → show login
   useEffect(() => {
+    if (isDemoMode) return;
     const open = () => setShowLogin(true)
     window.addEventListener("lucia:show-login", open)
     return () => window.removeEventListener("lucia:show-login", open)
-  }, [])
+  }, [isDemoMode])
 
   // Sidebar → switch chat
   useEffect(() => {
+    if (isDemoMode) return;
     const onSwitch = (e) => {
       const cid = e.detail?.cid
       if (!cid) return
@@ -228,7 +233,7 @@ export default function ChatPage() {
       window.removeEventListener("lucia:switch-chat", onSwitch)
       window.removeEventListener("popstate", onPop)
     }
-  }, [])
+  }, [isDemoMode])
 
   // NEW: Sidebar → legal page navigation
   useEffect(() => {
@@ -242,6 +247,7 @@ export default function ChatPage() {
 
   // Live messages
   useEffect(() => {
+    if (isDemoMode) return;
     if (!conversationId || !user?.uid) return
     setLoadingThread(true)
     const unsub = listenMessages(user.uid, conversationId, (rows) => {
@@ -249,10 +255,11 @@ export default function ChatPage() {
       setLoadingThread(false)
     })
     return () => { setLoadingThread(true); unsub && unsub() }
-  }, [conversationId, user?.uid])
+  }, [conversationId, user?.uid, isDemoMode])
 
   // Live profile
   useEffect(() => {
+    if (isDemoMode) return;
     if (!user?.uid) return
     let unsub = null
     ;(async () => {
@@ -262,20 +269,20 @@ export default function ChatPage() {
       unsub = onSnapshot(ref, (snap) => setProfile(snap.exists() ? snap.data() : null))
     })()
     return () => unsub && unsub()
-  }, [user?.uid])
+  }, [user?.uid, isDemoMode])
 
   // Quota
   const quota = useMemo(() => {
-    if (!profile) {
+    if (isDemoMode || !profile) {
       return {
-        unlimited: false,
+        unlimited: true, // Demo mode is unlimited
         used: 0,
-        base: 10,
-        courtesyCap: 12,
+        base: Infinity,
+        courtesyCap: null,
         courtesyUsed: false,
-        courtesyAvailable: true,
-        total: 10,
-        remaining: 10,
+        courtesyAvailable: false,
+        total: Infinity,
+        remaining: Infinity,
       }
     }
 
@@ -312,9 +319,10 @@ export default function ChatPage() {
       total,
       remaining,
     }
-  }, [profile])
+  }, [profile, isDemoMode])
 
   useEffect(() => {
+    if (isDemoMode) return;
     if (!quota || quota.unlimited) { setShowCourtesy(false); setCapHit(false); return }
 
     if (quota.courtesyAvailable && !quota.courtesyUsed && quota.used === quota.base) {
@@ -325,7 +333,7 @@ export default function ChatPage() {
     if (Number.isFinite(cap) && quota.used >= cap) { setShowCourtesy(false); setCapHit(true); return }
 
     setCapHit(false)
-  }, [quota])
+  }, [quota, isDemoMode])
 
   async function ensureLogin() {
     if (!auth.currentUser) { setShowLogin(true); throw new Error("Login required") }
@@ -344,6 +352,46 @@ export default function ChatPage() {
     } catch (e) { console.error("Courtesy accept failed:", e) }
   }
   function handleCourtesyDecline() { setShowCourtesy(false); setCapHit(true) }
+
+async function sendDemoMessage() {
+  const content = text.trim();
+  if (!content) return;
+  
+  const newUserMessage = { id: Date.now(), role: 'user', content };
+  const newMsgs = [...msgs, newUserMessage];
+  
+  setMsgs(newMsgs);
+  setBusy(true);
+  setText("");
+
+  try {
+    const history = newMsgs.map(m => ({ role: m.role, content: m.content }));
+    
+    const result = await fetchChatCompletion({
+      url: '/api/chat/demo',
+      prompt: content,
+      history,
+      demo: true,
+      sessionId: demoSessionId
+    });
+
+    if (result.sessionId && result.sessionId !== demoSessionId) {
+      sessionStorage.setItem('demoSessionId', result.sessionId);
+      setDemoSessionId(result.sessionId);
+    }
+
+    if (result.ok) {
+      setMsgs(prev => [...prev, { id: Date.now() + 1, role: 'assistant', content: result.content }]);
+    } else {
+      setMsgs(prev => [...prev, { id: Date.now() + 1, role: 'system', content: `⚠️ ${result.reason}` }]);
+    }
+  } catch (err) {
+    console.error(err);
+    setMsgs(prev => [...prev, { id: Date.now() + 1, role: 'system', content: `⚠️ An unexpected error occurred.` }]);
+  } finally {
+    setBusy(false);
+  }
+}
 
 async function send() {
   const content = text.trim()
@@ -417,11 +465,11 @@ async function send() {
 
   return (
     <>
-      {showLogin && <LoginForm onClose={() => setShowLogin(false)} onLogin={() => setShowLogin(false)} />}
-      {showCourtesy && <CourtesyPopup onAccept={handleCourtesyAccept} onDecline={handleCourtesyDecline} />}
-      {user && user.email && !user.emailVerified && <EmailVerifyBanner />}
+      {!isDemoMode && showLogin && <LoginForm onClose={() => setShowLogin(false)} onLogin={() => setShowLogin(false)} />}
+      {!isDemoMode && showCourtesy && <CourtesyPopup onAccept={handleCourtesyAccept} onDecline={handleCourtesyDecline} />}
+      {!isDemoMode && user && user.email && !user.emailVerified && <EmailVerifyBanner />}
 
-      {capHit && (
+      {!isDemoMode && capHit && (
         <div className="limit-banner" role="alert">
           <div>
             <div className="title">Free messages finished</div>
@@ -432,7 +480,7 @@ async function send() {
       )}
 
       <div className="thread">
-        {loadingThread ? (
+        {loadingThread && !isDemoMode ? (
           <div className="lucia-listening">
             <div className="lucia-spinner"></div>
             <div className="lucia-listening-text">Lucia is listening...</div>
@@ -454,9 +502,9 @@ async function send() {
         )}
       </div>
 
-      <Composer value={text} setValue={setText} onSend={send} onCancel={cancel} busy={busy} />
+      <Composer value={text} setValue={setText} onSend={isDemoMode ? sendDemoMessage : send} onCancel={cancel} busy={busy} />
 
-      {usageDisplay && !capHit && !showCourtesy && (
+      {!isDemoMode && usageDisplay && !capHit && !showCourtesy && (
         <div className={"usage-indicator usage-indicator--sm " +
           (quota.remaining > 2 ? "usage-indicator--ok" : quota.remaining > 0 ? "usage-indicator--warn" : "usage-indicator--bad")}>
           <span className="usage-indicator__dot"></span>

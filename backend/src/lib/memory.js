@@ -30,19 +30,21 @@ const db = getFirestore();
 
 /**
  * Retrieves the user's long-term memory summary.
- * @param {string} userId 
+ * @param {string} id The user ID or session ID.
+ * @param {boolean} [isDemo=false] Whether this is a demo session.
  * @returns {Promise<string>} The summary text or empty string.
  */
-async function getMemory(userId) {
+async function getMemory(id, isDemo = false) {
+  const collectionName = isDemo ? 'demo_sessions' : 'users';
   try {
-    const docRef = db.collection('users').doc(userId).collection('memory').doc('summary');
+    const docRef = db.collection(collectionName).doc(id).collection('memory').doc('summary');
     const doc = await docRef.get();
     if (doc.exists) {
       return doc.data().content || '';
     }
     return '';
   } catch (err) {
-    console.error(`Error fetching memory for user ${userId}:`, err);
+    console.error(`Error fetching memory for id ${id}:`, err);
     return '';
   }
 }
@@ -50,11 +52,12 @@ async function getMemory(userId) {
 /**
  * Updates the user's long-term memory summary using Vertex AI.
  * This should be called asynchronously/background.
- * @param {string} userId 
+ * @param {string} id The user ID or session ID.
  * @param {Array} newMessages - Array of {role, content}
  * @param {string} existingSummary - Optional, optimization to avoid refetching
+ * @param {boolean} [isDemo=false] Whether this is a demo session.
  */
-async function updateMemory(userId, newMessages, existingSummary = null) {
+async function updateMemory(id, newMessages, existingSummary = null, isDemo = false) {
   try {
     const model = getModel();
     if (!model) return;
@@ -62,7 +65,7 @@ async function updateMemory(userId, newMessages, existingSummary = null) {
     // 1. Get current summary if not provided
     let currentSummary = existingSummary;
     if (currentSummary === null) {
-      currentSummary = await getMemory(userId);
+      currentSummary = await getMemory(id, isDemo);
     }
 
     // 2. Prepare the prompt
@@ -91,16 +94,17 @@ Update the EXISTING MEMORY to include any new, relevant details from the NEW INT
 
     if (updatedSummary && updatedSummary !== currentSummary) {
       // 4. Save to Firestore
-      const docRef = db.collection('users').doc(userId).collection('memory').doc('summary');
+      const collectionName = isDemo ? 'demo_sessions' : 'users';
+      const docRef = db.collection(collectionName).doc(id).collection('memory').doc('summary');
       await docRef.set({
         content: updatedSummary,
         updatedAt: Timestamp.now()
       });
-      console.log(`Memory updated for user ${userId}`);
+      console.log(`Memory updated for id ${id}`);
     }
 
   } catch (err) {
-    console.error(`Error updating memory for user ${userId}:`, err);
+    console.error(`Error updating memory for id ${id}:`, err);
   }
 }
 

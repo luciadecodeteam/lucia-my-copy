@@ -243,6 +243,10 @@ export default function LoginForm({ onClose, onLogin }) {
             <button className="google-btn" onClick={handleGoogleLogin} disabled={loading}>
               Continue with Google
             </button>
+            <div className="divider">or</div>
+            <button className="demo-btn" onClick={() => window.location.href = '/chat?demo=true'} disabled={loading}>
+              Try a Demo
+            </button>
 
             {(error || hint) && (
               <div className="error" style={{marginTop:10}}>
@@ -336,6 +340,10 @@ export default function LoginForm({ onClose, onLogin }) {
             <div className="divider">or</div>
             <button className="google-btn" onClick={handleGoogleLogin} disabled={loading}>
               Continue with Google
+            </button>
+            <div className="divider">or</div>
+            <button className="demo-btn" onClick={() => window.location.href = '/chat?demo=true'} disabled={loading}>
+              Try a Demo
             </button>
 
             {(error || hint) && (

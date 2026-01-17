@@ -1,5 +1,6 @@
 // server/routes/chat.js
 const router = require('express').Router();
+const crypto = require('crypto');
 const { LambdaClient, InvokeCommand } = require('@aws-sdk/client-lambda');
 const { verifyAuth } = require('../lib/authMiddleware');
 const { getMemory, updateMemory } = require('../lib/memory');
@@ -19,6 +20,80 @@ function sanitizeHistory(raw) {
     })
     .filter((entry) => entry.content.length > 0);
 }
+
+// Demo chat endpoint (unauthenticated)
+router.post('/demo', async (req, res) => {
+  const prompt = (req.body?.prompt ?? '').toString();
+  if (!prompt.trim()) {
+    return res.status(400).json({ error: 'prompt_required' });
+  }
+
+  let sessionId = req.body?.sessionId;
+  let newSessionId = null;
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    newSessionId = sessionId; // Flag to send it back to the client
+  }
+
+  const history = sanitizeHistory(req.body?.history);
+  
+  // Fetch Demo Memory
+  let userMemory = '';
+  try {
+    userMemory = await getMemory(sessionId, true);
+  } catch (err) {
+    console.warn(`Failed to load demo memory for session ${sessionId}`, err);
+  }
+
+  const messages = history.length
+    ? [...history, { role: 'user', content: prompt }]
+    : [{ role: 'user', content: prompt }];
+
+  const memoryContext = userMemory ? `\n\nUser Context / Long-term Memory:\n${userMemory}` : '';
+  
+  const finalMessages = [...messages];
+  if (userMemory) {
+    finalMessages.unshift({ role: 'system', content: `Current user memory:${memoryContext}` });
+  }
+
+  const payload = {
+    mode: 'chat',
+    messages: finalMessages,
+  };
+
+  try {
+    const cmd = new InvokeCommand({
+      FunctionName: FUNCTION_NAME,
+      InvocationType: 'RequestResponse',
+      Payload: Buffer.from(JSON.stringify(payload)),
+    });
+
+    const resp = await lambda.send(cmd);
+    const body = resp.Payload
+      ? JSON.parse(new TextDecoder().decode(resp.Payload))
+      : { error: 'empty_lambda_response' };
+
+    if (body.reply) {
+      // Async: Update Demo Memory
+      updateMemory(sessionId, [{ role: 'user', content: prompt }, { role: 'assistant', content: body.reply }], userMemory, true)
+        .catch(err => console.error(`Background demo memory update failed for session ${sessionId}`, err));
+
+      const responsePayload = { reply: body.reply };
+      if (newSessionId) {
+        responsePayload.sessionId = newSessionId;
+      }
+      return res.json(responsePayload);
+
+    } else if (body.error) {
+      return res.status(502).json({ error: body.error });
+    } else {
+      return res.status(502).json({ error: 'unexpected_response', body });
+    }
+  } catch (err) {
+    console.error('Lambda invoke failed', err);
+    return res.status(502).json({ error: 'lambda_invoke_failed', message: err.message });
+  }
+});
 
 router.post('/', verifyAuth, async (req, res) => {
   const prompt = (req.body?.prompt ?? '').toString();

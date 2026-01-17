@@ -1,5 +1,23 @@
 "use strict";
 
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+// Vercel-specific: Handle service account key from environment variable
+if (process.env.GCP_SERVICE_ACCOUNT_KEY_JSON && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  try {
+    const tempDir = os.tmpdir();
+    // Use a consistent filename to avoid creating multiple files on hot reloads in dev
+    const keyFilePath = path.join(tempDir, `gcp-key.json`); 
+    fs.writeFileSync(keyFilePath, process.env.GCP_SERVICE_ACCOUNT_KEY_JSON);
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = keyFilePath;
+    console.log('Google Cloud credentials configured for Vercel environment.');
+  } catch (error) {
+    console.error('Failed to write GCP service account key for Vercel:', error);
+  }
+}
+
 const { initializeApp, applicationDefault, cert, getApps } = require("firebase-admin/app");
 const { getFirestore, FieldValue, Timestamp } = require("firebase-admin/firestore");
 

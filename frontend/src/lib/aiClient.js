@@ -146,49 +146,60 @@ function extractErrorReason(payload) {
   return null
 }
 
-export async function fetchChatCompletion({ url, prompt, history, token, signal }) {
+export async function fetchChatCompletion({ url, prompt, history, token, demo, sessionId, signal }) {
   try {
+    const body = { prompt, history };
+    if (demo) {
+      body.sessionId = sessionId;
+    }
+
     const res = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
+        ...(token && !demo ? { Authorization: `Bearer ${token}` } : {})
       },
-      body: JSON.stringify({ prompt, history }),
+      body: JSON.stringify(body),
       signal
-    })
+    });
 
-    const bodyText = await res.text()
-    let payload = null
+    const bodyText = await res.text();
+    let payload = null;
     try {
-      payload = bodyText ? JSON.parse(bodyText) : null
+      payload = bodyText ? JSON.parse(bodyText) : null;
     } catch {
-      payload = bodyText
+      payload = bodyText;
     }
 
     if (!res.ok) {
       const reason =
         (typeof payload === 'object' ? extractErrorReason(payload) : null) ||
-        `${res.status} ${res.statusText || ''}`.trim()
-      return { ok: false, reason: reason || `HTTP ${res.status}`, raw: bodyText }
+        `${res.status} ${res.statusText || ''}`.trim();
+      return { ok: false, reason: reason || `HTTP ${res.status}`, raw: bodyText };
     }
 
-    const result = extractContent(payload ?? bodyText)
+    const result = extractContent(payload ?? bodyText);
     if (result.peeled) {
-      console.debug('aiClient: peeled wrapper from chat response')
+      console.debug('aiClient: peeled wrapper from chat response');
     }
 
-    const content = typeof result.text === 'string' ? result.text.trim() : ''
+    const content = typeof result.text === 'string' ? result.text.trim() : '';
     if (!content) {
-      return { ok: false, reason: 'Empty response from server.', raw: bodyText }
+      return { ok: false, reason: 'Empty response from server.', raw: bodyText };
+    }
+    
+    const responsePayload = { ok: true, content };
+    if (payload?.sessionId) {
+      responsePayload.sessionId = payload.sessionId;
     }
 
-    return { ok: true, content }
+    return responsePayload;
+
   } catch (error) {
     const reason = (error && typeof error.message === 'string' && error.message.trim())
       ? error.message.trim()
-      : 'Network error'
-    return { ok: false, reason, raw: null }
+      : 'Network error';
+    return { ok: false, reason, raw: null };
   }
 }
 
