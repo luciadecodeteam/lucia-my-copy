@@ -17,7 +17,7 @@ function getModel() {
 
   const vertex_ai = new VertexAI({ project: projectId, location: location });
   generativeModel = vertex_ai.getGenerativeModel({
-    model: 'gemini-1.5-flash-001', // Efficient model for summarization
+    model: 'gemini-2.0-flash-lite', // Efficient model for summarization
     generationConfig: {
       maxOutputTokens: 1000,
       temperature: 0.2, // Low temperature for factual consistency
