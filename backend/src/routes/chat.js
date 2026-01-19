@@ -74,9 +74,12 @@ router.post('/demo', async (req, res) => {
       : { error: 'empty_lambda_response' };
 
     if (body.reply) {
-      // Async: Update Demo Memory
-      updateMemory(sessionId, [{ role: 'user', content: prompt }, { role: 'assistant', content: body.reply }], userMemory, true)
-        .catch(err => console.error(`Background demo memory update failed for session ${sessionId}`, err));
+      // FOR DEBUGGING: Await the memory update to see errors on the client
+      try {
+        await updateMemory(sessionId, [{ role: 'user', content: prompt }, { role: 'assistant', content: body.reply }], userMemory, true);
+      } catch (memError) {
+        return res.status(500).json({ error: 'scribe_failed', message: memError.message, details: memError.stack });
+      }
 
       const responsePayload = { reply: body.reply };
       if (newSessionId) {
@@ -148,10 +151,12 @@ router.post('/', verifyAuth, async (req, res) => {
 
     // normalize what your frontend expects
     if (body.reply) {
-      // Async: Update Memory
-      // We don't await this, so it doesn't block the response
-      updateMemory(req.user.uid, [{ role: 'user', content: prompt }, { role: 'assistant', content: body.reply }], userMemory)
-        .catch(err => console.error('Background memory update failed', err));
+      // FOR DEBUGGING: Await the memory update to see errors on the client
+      try {
+        await updateMemory(req.user.uid, [{ role: 'user', content: prompt }, { role: 'assistant', content: body.reply }], userMemory);
+      } catch (memError) {
+        return res.status(500).json({ error: 'scribe_failed', message: memError.message, details: memError.stack });
+      }
 
       return res.json({ reply: body.reply });
     } else if (body.error) {
