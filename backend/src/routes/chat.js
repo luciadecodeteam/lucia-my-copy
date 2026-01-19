@@ -49,16 +49,11 @@ router.post('/demo', async (req, res) => {
     ? [...history, { role: 'user', content: prompt }]
     : [{ role: 'user', content: prompt }];
 
-  const memoryContext = userMemory ? `\n\nUser Context / Long-term Memory:\n${userMemory}` : '';
-  
-  const finalMessages = [...messages];
-  if (userMemory) {
-    finalMessages.unshift({ role: 'system', content: `Current user memory:${memoryContext}` });
-  }
-
   const payload = {
-    mode: 'chat',
-    messages: finalMessages,
+    contents: finalMessages.map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user', // Map roles for Gemini
+      parts: [{ text: m.content }]
+    }))
   };
 
   try {
@@ -74,12 +69,9 @@ router.post('/demo', async (req, res) => {
       : { error: 'empty_lambda_response' };
 
     if (body.reply) {
-      // FOR DEBUGGING: Await the memory update to see errors on the client
-      try {
-        await updateMemory(sessionId, [{ role: 'user', content: prompt }, { role: 'assistant', content: body.reply }], userMemory, true);
-      } catch (memError) {
-        return res.status(500).json({ error: 'scribe_failed', message: memError.message, details: memError.stack });
-      }
+      // Fire-and-forget memory update in the background
+      updateMemory(sessionId, [{ role: 'user', content: prompt }, { role: 'assistant', content: body.reply }], userMemory, true)
+        .catch(err => console.error(`[NON-BLOCKING] Scribe failed for demo session ${sessionId}:`, err));
 
       const responsePayload = { reply: body.reply };
       if (newSessionId) {
@@ -133,8 +125,10 @@ router.post('/', verifyAuth, async (req, res) => {
   }
 
   const payload = {
-    mode: 'chat',
-    messages: finalMessages,
+    contents: finalMessages.map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user', // Map roles for Gemini
+      parts: [{ text: m.content }]
+    }))
   };
 
   try {
@@ -151,12 +145,9 @@ router.post('/', verifyAuth, async (req, res) => {
 
     // normalize what your frontend expects
     if (body.reply) {
-      // FOR DEBUGGING: Await the memory update to see errors on the client
-      try {
-        await updateMemory(req.user.uid, [{ role: 'user', content: prompt }, { role: 'assistant', content: body.reply }], userMemory);
-      } catch (memError) {
-        return res.status(500).json({ error: 'scribe_failed', message: memError.message, details: memError.stack });
-      }
+      // Fire-and-forget memory update in the background
+      updateMemory(req.user.uid, [{ role: 'user', content: prompt }, { role: 'assistant', content: body.reply }], userMemory)
+        .catch(err => console.error(`[NON-BLOCKING] Scribe failed for user ${req.user.uid}:`, err));
 
       return res.json({ reply: body.reply });
     } else if (body.error) {

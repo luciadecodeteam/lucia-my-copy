@@ -1,4 +1,7 @@
 // Google Vertex AI proxy using Workload Identity Federation.
+// This Lambda now acts as a simple, dumb proxy for Vertex AI requests.
+// The caller (e.g., your backend server) is responsible for constructing
+// the correct 'contents' payload and deciding if it's for chat or summarization.
 import { GoogleAuth } from "google-auth-library";
 
 // --- Configuration ---
@@ -29,7 +32,7 @@ function json(statusCode, body, extraHeaders) {
   };
 }
 
-// --- Body and Payload Validation ---
+// --- Body Decoding ---
 function decodeBody(event) {
   if (!event?.body) return "";
   try {
@@ -41,36 +44,6 @@ function decodeBody(event) {
   }
 }
 
-function validate(payload) {
-  const mode = payload?.mode;
-  if (!mode)
-    return { ok: false, code: "invalid_mode", reason: "Payload must have a 'mode' field." };
-
-  if (mode === "chat") {
-    if (!Array.isArray(payload.messages) || payload.messages.length === 0)
-      return { ok: false, code: "invalid_messages", reason: "Chat mode requires a non-empty 'messages' array." };
-
-    const messages = payload.messages.map((m, i) => {
-      const role = typeof m?.role === "string" ? m.role : null;
-      const content = typeof m?.content === "string" ? m.content : null;
-      if (!role || !content)
-        throw new Error(`Message at index ${i} is missing role or content.`);
-      return { role, content };
-    });
-    return { ok: true, mode, messages };
-  }
-
-  if (mode === "summarize") {
-    const text = payload?.text;
-    if (typeof text !== "string" || !text.trim())
-      return { ok: false, code: "invalid_text", reason: "Summarize mode requires a non-empty 'text' field." };
-    return { ok: true, mode, text: text.trim() };
-  }
-
-  return { ok: false, code: "unsupported_mode", reason: `Mode '${mode}' is not supported.` };
-}
-
-
 // --- Main Handler ---
 export const handler = async (event) => {
   // --- OPTIONS Preflight ---
@@ -79,7 +52,7 @@ export const handler = async (event) => {
   if (method !== "POST")
     return json(405, { ok: false, code: "method_not_allowed", reason: "Only POST is supported." });
 
-  // --- Body Parsing and Validation ---
+  // --- Body Parsing ---
   const raw = decodeBody(event);
   if (raw === null)
     return json(400, { ok: false, code: "invalid_encoding", reason: "Body could not be decoded." });
@@ -90,12 +63,17 @@ export const handler = async (event) => {
     return json(400, { ok: false, code: "invalid_json", reason: "Body must be valid JSON." });
   }
 
-  let validation;
-  try { validation = validate(payload); }
-  catch (e) {
-    return json(400, { ok: false, code: "invalid_message", reason: e?.message });
+  // --- Validate incoming 'contents' payload ---
+  const contents = payload.contents;
+  if (!Array.isArray(contents) || contents.length === 0) {
+    return json(400, { ok: false, code: "invalid_contents", reason: "'contents' array is missing or empty." });
   }
-  if (!validation.ok) return json(400, validation);
+  // Basic check for contents structure
+  for (const item of contents) {
+    if (!item.role || !Array.isArray(item.parts) || item.parts.length === 0) {
+      return json(400, { ok: false, code: "invalid_contents_format", reason: "Each content item must have a role and non-empty parts." });
+    }
+  }
 
   // --- Authentication (Workload Identity Federation) ---
   let accessToken;
@@ -118,30 +96,11 @@ export const handler = async (event) => {
     return json(500, { ok: false, code: "gcp_auth_no_token", reason: "Received an empty access token." });
   }
 
-  // --- Build Upstream Request ---
-  let contents;
-  if (validation.mode === "chat") {
-    // Convert OpenAI-style roles to Gemini roles
-    contents = validation.messages.map(m => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }]
-    }));
-  } else if (validation.mode === "summarize") {
-    contents = [{
-      role: "user",
-      parts: [{ text: `Please provide a concise summary of the following text:
-
----
-
-${validation.text}` }]
-    }];
-  }
-
+  // --- Call Vertex AI ---
   const url = `https://${GCP_REGION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/publishers/google/models/${MODEL_ID}:streamGenerateContent`;
 
   const upstreamPayload = { contents };
 
-  // --- Call Vertex AI ---
   const upstream = await fetch(url, {
     method: "POST",
     headers: {
