@@ -3,7 +3,7 @@ const router = require('express').Router();
 const crypto = require('crypto');
 const { LambdaClient, InvokeCommand } = require('@aws-sdk/client-lambda');
 const { verifyAuth } = require('../lib/authMiddleware');
-const { getMemory, updateMemory } = require('../lib/memory');
+
 
 // configure AWS Lambda client (region must match your function)
 const lambda = new LambdaClient({ region: 'eu-west-1' });
@@ -37,20 +37,14 @@ router.post('/demo', async (req, res) => {
 
   const history = sanitizeHistory(req.body?.history);
   
-  // Fetch Demo Memory
-  let userMemory = '';
-  try {
-    userMemory = await getMemory(sessionId, true);
-  } catch (err) {
-    console.warn(`Failed to load demo memory for session ${sessionId}`, err);
-  }
+
 
   const messages = history.length
     ? [...history, { role: 'user', content: prompt }]
     : [{ role: 'user', content: prompt }];
 
   const payload = {
-    contents: finalMessages.map(m => ({
+    contents: messages.map(m => ({
       role: m.role === 'assistant' ? 'model' : 'user', // Map roles for Gemini
       parts: [{ text: m.content }]
     }))
@@ -69,9 +63,25 @@ router.post('/demo', async (req, res) => {
       : { error: 'empty_lambda_response' };
 
     if (body.reply) {
-      // Fire-and-forget memory update in the background
-      updateMemory(sessionId, [{ role: 'user', content: prompt }, { role: 'assistant', content: body.reply }], userMemory, true)
-        .catch(err => console.error(`[NON-BLOCKING] Scribe failed for demo session ${sessionId}:`, err));
+      // Trigger summarizer async (fire-and-forget)
+      try {
+        const summarizerPayload = {
+          userId: sessionId, // For demo, session ID is the user identifier
+          conversationTurn: {
+            userMessage: prompt,
+            aiResponse: body.reply
+          }
+        };
+        const cmd = new InvokeCommand({
+          FunctionName: 'lucia-summarizer-function',
+          InvocationType: 'Event', // Async
+          Payload: Buffer.from(JSON.stringify(summarizerPayload))
+        });
+        lambda.send(cmd).catch(err => console.error('⚠️ Failed to trigger summarizer for demo:', err));
+        console.log('✅ Summarizer triggered for demo session');
+      } catch (error) {
+        console.error('⚠️ Failed to build summarizer trigger:', error);
+      }
 
       const responsePayload = { reply: body.reply };
       if (newSessionId) {
@@ -98,34 +108,14 @@ router.post('/', verifyAuth, async (req, res) => {
 
   const history = sanitizeHistory(req.body?.history);
   
-  // Fetch User Memory
-  let userMemory = '';
-  try {
-    userMemory = await getMemory(req.user.uid);
-  } catch (err) {
-    console.warn('Failed to load user memory', err);
-  }
+
 
   const messages = history.length
     ? [...history, { role: 'user', content: prompt }]
     : [{ role: 'user', content: prompt }];
 
-  // Inject memory into context (as a system message or prepended to first user message)
-  // We'll add it as a system message at the start.
-  // Note: If the first message in history is already system, we might want to merge or append.
-  // For simplicity, we just unshift a new system message.
-  const memoryContext = userMemory ? `\n\nUser Context / Long-term Memory:\n${userMemory}` : '';
-  
-  // If there's memory, we prepend it. 
-  // Depending on the model, it might handle multiple system messages or just one.
-  // We'll assume the downstream proxy/model handles a list of messages.
-  const finalMessages = [...messages];
-  if (userMemory) {
-    finalMessages.unshift({ role: 'system', content: `Current user memory:${memoryContext}` });
-  }
-
   const payload = {
-    contents: finalMessages.map(m => ({
+    contents: messages.map(m => ({
       role: m.role === 'assistant' ? 'model' : 'user', // Map roles for Gemini
       parts: [{ text: m.content }]
     }))
@@ -145,9 +135,25 @@ router.post('/', verifyAuth, async (req, res) => {
 
     // normalize what your frontend expects
     if (body.reply) {
-      // Fire-and-forget memory update in the background
-      updateMemory(req.user.uid, [{ role: 'user', content: prompt }, { role: 'assistant', content: body.reply }], userMemory)
-        .catch(err => console.error(`[NON-BLOCKING] Scribe failed for user ${req.user.uid}:`, err));
+      // Trigger summarizer async (fire-and-forget)
+      try {
+        const summarizerPayload = {
+          userId: req.user.uid,
+          conversationTurn: {
+            userMessage: prompt,
+            aiResponse: body.reply
+          }
+        };
+        const cmd = new InvokeCommand({
+          FunctionName: 'lucia-summarizer-function',
+          InvocationType: 'Event', // Async
+          Payload: Buffer.from(JSON.stringify(summarizerPayload))
+        });
+        lambda.send(cmd).catch(err => console.error('⚠️ Failed to trigger summarizer:', err));
+        console.log('✅ Summarizer triggered for user:', req.user.uid);
+      } catch (error) {
+        console.error('⚠️ Failed to build summarizer trigger:', error);
+      }
 
       return res.json({ reply: body.reply });
     } else if (body.error) {
