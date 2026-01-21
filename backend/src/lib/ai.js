@@ -71,19 +71,27 @@ async function callAI(prompt, options = {}) {
       throw new Error('Empty response from AI proxy');
     }
 
-    // New Proxy returns { ok: true, reply: "..." }
-    if (data.reply) return data.reply;
-    
-    // Legacy handling (just in case)
-    if (typeof data === 'string') return data;
-    if (data.result) return data.result;
-    if (data.output) return data.output;
-    
-    const choice = data.choices && data.choices[0];
-    if (choice?.message?.content) return choice.message.content;
-    if (choice?.text) return choice.text;
-    
-    return JSON.stringify(data);
+    // 🆕 CHANGED: Extract reply to variable first
+    let reply;
+    if (data.reply) reply = data.reply;
+    else if (typeof data === 'string') reply = data;
+    else if (data.result) reply = data.result;
+    else if (data.output) reply = data.output;
+    else {
+      const choice = data.choices && data.choices[0];
+      if (choice?.message?.content) reply = choice.message.content;
+      else if (choice?.text) reply = choice.text;
+      else reply = JSON.stringify(data);
+    }
+
+    // 🆕 NEW: Update memory (fire-and-forget)
+    if (options.userId && prompt && reply) {
+      updateMemory(options.userId, prompt, reply).catch(err => {
+        console.error('Memory update failed:', err?.message);
+      });
+    }
+
+    return reply;
 
   } catch (err) {
     const message = err?.response?.data?.error || err?.response?.data?.reason || err?.message || 'AI proxy request failed';
@@ -92,4 +100,31 @@ async function callAI(prompt, options = {}) {
   }
 }
 
-module.exports = { callAI };
+// 🆕 NEW FUNCTION: Update memory in Lambda
+async function updateMemory(userId, userMessage, aiResponse) {
+  const memoryLambdaUrl = process.env.MEMORY_LAMBDA_URL;
+  if (!memoryLambdaUrl) {
+    console.warn('MEMORY_LAMBDA_URL not configured, skipping memory update');
+    return;
+  }
+
+  try {
+    await axios.post(memoryLambdaUrl, {
+      userId,
+      conversationTurn: {
+        userMessage,
+        aiResponse
+      }
+    }, { 
+      timeout: 5000 // Short timeout
+    });
+  } catch (err) {
+    // Silent fail - don't break user experience
+    console.error('Memory Lambda error:', err?.message);
+  }
+}
+
+// 🆕 CHANGED: Export both functions
+module.exports = { callAI, updateMemory };
+
+//
