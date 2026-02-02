@@ -33,15 +33,10 @@ router.post('/demo', async (req, res) => {
   
 
 
-  const messages = history.length
-    ? [...history, { role: 'user', content: prompt }]
-    : [{ role: 'user', content: prompt }];
-
   const payload = {
-    contents: messages.map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user', // Map roles for Gemini
-      parts: [{ text: m.content }]
-    }))
+    prompt: prompt,
+    userId: sessionId, // For demo, session ID is the user identifier
+    conversationId: sessionId
   };
 
   try {
@@ -106,15 +101,10 @@ router.post('/', verifyAuth, async (req, res) => {
   
 
 
-  const messages = history.length
-    ? [...history, { role: 'user', content: prompt }]
-    : [{ role: 'user', content: prompt }];
-
   const payload = {
-    contents: messages.map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user', // Map roles for Gemini
-      parts: [{ text: m.content }]
-    }))
+    prompt: prompt,
+    userId: req.user.uid,
+    conversationId: req.body.conversationId
   };
 
   try {
