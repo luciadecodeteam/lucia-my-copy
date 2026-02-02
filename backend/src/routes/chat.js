@@ -1,12 +1,7 @@
 // server/routes/chat.js
 const router = require('express').Router();
 const crypto = require('crypto');
-const { LambdaClient, InvokeCommand } = require('@aws-sdk/client-lambda');
 const { verifyAuth } = require('../lib/authMiddleware');
-
-// configure AWS Lambda client (region must match your function)
-const lambda = new LambdaClient({ region: 'eu-west-1' });
-const FUNCTION_NAME = 'lucia-openai-proxy';
 
 function sanitizeHistory(raw) {
   if (!Array.isArray(raw)) return [];
@@ -50,16 +45,18 @@ router.post('/demo', async (req, res) => {
   };
 
   try {
-    const cmd = new InvokeCommand({
-      FunctionName: FUNCTION_NAME,
-      InvocationType: 'RequestResponse',
-      Payload: Buffer.from(JSON.stringify(payload)),
+    const CHAT_LAMBDA_URL = process.env.CHAT_LAMBDA_URL || 'https://acmjtgoc47eieiii6gksw3bx6u0feemy.lambda-url.eu-west-1.on.aws/';
+    const response = await fetch(CHAT_LAMBDA_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     });
 
-    const resp = await lambda.send(cmd);
-    const body = resp.Payload
-      ? JSON.parse(new TextDecoder().decode(resp.Payload))
-      : { error: 'empty_lambda_response' };
+    if (!response.ok) {
+      throw new Error(`Lambda returned ${response.status}`);
+    }
+
+    const body = await response.json();
 
     if (body.reply) {
       // Trigger summarizer async (fire-and-forget)
@@ -71,12 +68,12 @@ router.post('/demo', async (req, res) => {
             aiResponse: body.reply
           }
         };
-        const cmd = new InvokeCommand({
-          FunctionName: 'lucia-summarizer-function',
-          InvocationType: 'Event', // Async
-          Payload: Buffer.from(JSON.stringify(summarizerPayload))
-        });
-        lambda.send(cmd).catch(err => console.error('⚠️ Failed to trigger summarizer for demo:', err));
+        const SUMMARIZER_LAMBDA_URL = process.env.SUMMARIZER_LAMBDA_URL || 'https://eyis5ss5ms7gzgar2uadqkm5sm0ixfqc.lambda-url.eu-west-1.on.aws/';
+        fetch(SUMMARIZER_LAMBDA_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(summarizerPayload)
+        }).catch(err => console.error('⚠️ Failed to trigger summarizer:', err));
         console.log('✅ Summarizer triggered for demo session');
       } catch (error) {
         console.error('⚠️ Failed to build summarizer trigger:', error);
@@ -121,16 +118,18 @@ router.post('/', verifyAuth, async (req, res) => {
   };
 
   try {
-    const cmd = new InvokeCommand({
-      FunctionName: FUNCTION_NAME,
-      InvocationType: 'RequestResponse',
-      Payload: Buffer.from(JSON.stringify(payload)),
+    const CHAT_LAMBDA_URL = process.env.CHAT_LAMBDA_URL || 'https://acmjtgoc47eieiii6gksw3bx6u0feemy.lambda-url.eu-west-1.on.aws/';
+    const response = await fetch(CHAT_LAMBDA_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     });
 
-    const resp = await lambda.send(cmd);
-    const body = resp.Payload
-      ? JSON.parse(new TextDecoder().decode(resp.Payload))
-      : { error: 'empty_lambda_response' };
+    if (!response.ok) {
+      throw new Error(`Lambda returned ${response.status}`);
+    }
+
+    const body = await response.json();
 
     // normalize what your frontend expects
     if (body.reply) {
@@ -143,12 +142,12 @@ router.post('/', verifyAuth, async (req, res) => {
             aiResponse: body.reply
           }
         };
-        const cmd = new InvokeCommand({
-          FunctionName: 'lucia-summarizer-function',
-          InvocationType: 'Event', // Async
-          Payload: Buffer.from(JSON.stringify(summarizerPayload))
-        });
-        lambda.send(cmd).catch(err => console.error('⚠️ Failed to trigger summarizer:', err));
+        const SUMMARIZER_LAMBDA_URL = process.env.SUMMARIZER_LAMBDA_URL || 'https://eyis5ss5ms7gzgar2uadqkm5sm0ixfqc.lambda-url.eu-west-1.on.aws/';
+        fetch(SUMMARIZER_LAMBDA_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(summarizerPayload)
+        }).catch(err => console.error('⚠️ Failed to trigger summarizer:', err));
         console.log('✅ Summarizer triggered for user:', req.user.uid);
       } catch (error) {
         console.error('⚠️ Failed to build summarizer trigger:', error);
