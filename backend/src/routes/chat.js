@@ -33,6 +33,15 @@ router.post('/demo', async (req, res) => {
   
 
 
+  const payload = {
+    mode: "chat",
+    prompt: prompt,
+    userId: sessionId, // For demo, session ID is the user identifier
+    conversationId: sessionId
+  };
+
+  try {
+    const CHAT_LAMBDA_URL = process.env.CHAT_LAMBDA_URL || 'https://acmjtgoc47eieiii6gksw3bx6u0feemy.lambda-url.eu-west-1.on.aws/';
     console.log('📤 Sending to Lambda:', JSON.stringify(payload, null, 2));
     const response = await fetch(CHAT_LAMBDA_URL, {
       method: 'POST',
