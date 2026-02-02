@@ -34,6 +34,7 @@ router.post('/demo', async (req, res) => {
 
 
   const payload = {
+    mode: "chat",
     prompt: prompt,
     userId: sessionId, // For demo, session ID is the user identifier
     conversationId: sessionId
@@ -102,6 +103,7 @@ router.post('/', verifyAuth, async (req, res) => {
 
 
   const payload = {
+    mode: "chat",
     prompt: prompt,
     userId: req.user.uid,
     conversationId: req.body.conversationId
