@@ -22,9 +22,9 @@ function sanitizeHistory(raw) {
 
 // Demo chat endpoint (unauthenticated)
 router.post('/demo', async (req, res) => {
-  const prompt = (req.body?.prompt ?? '').toString();
+  const prompt = (req.body.prompt || req.body.message || '').toString();
   if (!prompt.trim()) {
-    return res.status(400).json({ error: 'prompt_required' });
+    return res.status(400).send("prompt_required");
   }
 
   let sessionId = req.body?.sessionId;
@@ -100,9 +100,9 @@ router.post('/demo', async (req, res) => {
 });
 
 router.post('/', verifyAuth, async (req, res) => {
-  const prompt = (req.body?.prompt ?? '').toString();
+  const prompt = (req.body.prompt || req.body.message || '').toString();
   if (!prompt.trim()) {
-    return res.status(400).json({ error: 'prompt_required' });
+    return res.status(400).send("prompt_required");
   }
 
   const history = sanitizeHistory(req.body?.history);
