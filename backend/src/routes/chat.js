@@ -4,26 +4,6 @@ const crypto = require('crypto');
 const { LambdaClient, InvokeCommand } = require('@aws-sdk/client-lambda');
 const { verifyAuth } = require('../lib/authMiddleware');
 
-// CORS Middleware
-router.use((req, res, next) => {
-  const origin = req.headers.origin;
-  // Allow only your frontend's origin
-  if (origin === 'https://lucia-phi.vercel.app') {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(204);
-  }
-
-  next();
-});
-
-
 // configure AWS Lambda client (region must match your function)
 const lambda = new LambdaClient({ region: 'eu-west-1' });
 const FUNCTION_NAME = 'lucia-openai-proxy';
