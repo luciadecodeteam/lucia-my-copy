@@ -33,26 +33,20 @@ router.post('/demo', async (req, res) => {
   
 
 
-  const payload = {
-    mode: "chat",
-    prompt: prompt,
-    userId: sessionId, // For demo, session ID is the user identifier
-    conversationId: sessionId
-  };
-
-  try {
-    const CHAT_LAMBDA_URL = process.env.CHAT_LAMBDA_URL || 'https://acmjtgoc47eieiii6gksw3bx6u0feemy.lambda-url.eu-west-1.on.aws/';
+    console.log('📤 Sending to Lambda:', JSON.stringify(payload, null, 2));
     const response = await fetch(CHAT_LAMBDA_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-
+    console.log('📥 Lambda response status:', response.status);
     if (!response.ok) {
-      throw new Error(`Lambda returned ${response.status}`);
+      const errorBody = await response.text();
+      console.error('❌ Lambda error response:', errorBody);
+      throw new Error(`Lambda returned ${response.status}: ${errorBody}`);
     }
-
     const body = await response.json();
+    console.log('✅ Lambda success:', body);
 
     if (body.reply) {
       // Trigger summarizer async (fire-and-forget)
@@ -110,18 +104,20 @@ router.post('/', verifyAuth, async (req, res) => {
   };
 
   try {
-    const CHAT_LAMBDA_URL = process.env.CHAT_LAMBDA_URL || 'https://acmjtgoc47eieiii6gksw3bx6u0feemy.lambda-url.eu-west-1.on.aws/';
+    console.log('📤 Sending to Lambda:', JSON.stringify(payload, null, 2));
     const response = await fetch(CHAT_LAMBDA_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-
+    console.log('📥 Lambda response status:', response.status);
     if (!response.ok) {
-      throw new Error(`Lambda returned ${response.status}`);
+      const errorBody = await response.text();
+      console.error('❌ Lambda error response:', errorBody);
+      throw new Error(`Lambda returned ${response.status}: ${errorBody}`);
     }
-
     const body = await response.json();
+    console.log('✅ Lambda success:', body);
 
     // normalize what your frontend expects
     if (body.reply) {
