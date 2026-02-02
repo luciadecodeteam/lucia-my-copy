@@ -148,7 +148,7 @@ function extractErrorReason(payload) {
 
 export async function fetchChatCompletion({ url, prompt, history, token, userId, conversationId, signal }) {
   try {
-    const body = { userId, conversationId, message: prompt, history };
+    const body = { userId, conversationId, prompt, history };
 
     const res = await fetch(url, {
       method: 'POST',
