@@ -22,48 +22,12 @@ app.options('*', (req, res) => {
 });
 
 // ----------------- CORS CONFIG -----------------
-const PROD_ORIGIN = "https://www.luciadecode.com";
-
-// Default allowlist
-const defaultAllowed = new Set([PROD_ORIGIN]);
-
-// Allow localhost in non-production
-if (process.env.NODE_ENV !== "production") {
-  [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-  ].forEach(o => defaultAllowed.add(o));
-}
-
-// Optional env override: comma-separated list (supports "*")
-const corsOrigin = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(",").map(s => s.trim()).filter(Boolean)
-  : null;
-
-const isAllowed = (origin) => {
-  if (!origin) return true; // same-origin / non-browser
-  if (corsOrigin) {
-    if (corsOrigin.includes("*") || corsOrigin.includes(origin)) return true;
-    return false;
-  }
-  return defaultAllowed.has(origin);
-};
-
-// Global CORS (lets Express answer preflight IF API Gateway forwards OPTIONS)
-app.use(
-  cors({
-    origin: (origin, cb) => (isAllowed(origin) ? cb(null, true) : cb(new Error("Not allowed by CORS"))),
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "stripe-signature", "authorization", "Authorization"],
-    credentials: false, // set true only if you actually use cookies/Authorization tied to credentials
-  })
-);
-
-// Explicit preflight for everything (safe)
-app.options("*", cors());
-
+app.use(cors({
+  origin: 'https://lucia-phi.vercel.app',
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 // -----------------------------------------------
 
 app.use(helmet());
