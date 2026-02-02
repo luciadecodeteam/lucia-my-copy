@@ -3,6 +3,9 @@ const router = require('express').Router();
 const crypto = require('crypto');
 const { verifyAuth } = require('../lib/authMiddleware');
 
+const CHAT_LAMBDA_URL = process.env.CHAT_LAMBDA_URL || 'https://acmjtgoc47eieiii6gksw3bx6u0feemy.lambda-url.eu-west-1.on.aws/';
+const SUMMARIZER_LAMBDA_URL = process.env.SUMMARIZER_LAMBDA_URL || 'https://eyis5ss5ms7gzgar2uadqkm5sm0ixfqc.lambda-url.eu-west-1.on.aws/';
+
 function sanitizeHistory(raw) {
   if (!Array.isArray(raw)) return [];
   return raw
@@ -41,7 +44,7 @@ router.post('/demo', async (req, res) => {
   };
 
   try {
-    const CHAT_LAMBDA_URL = process.env.CHAT_LAMBDA_URL || 'https://acmjtgoc47eieiii6gksw3bx6u0feemy.lambda-url.eu-west-1.on.aws/';
+
     console.log('📤 Sending to Lambda:', JSON.stringify(payload, null, 2));
     const response = await fetch(CHAT_LAMBDA_URL, {
       method: 'POST',
@@ -67,13 +70,7 @@ router.post('/demo', async (req, res) => {
             aiResponse: body.reply
           }
         };
-        const SUMMARIZER_LAMBDA_URL = process.env.SUMMARIZER_LAMBDA_URL || 'https://eyis5ss5ms7gzgar2uadqkm5sm0ixfqc.lambda-url.eu-west-1.on.aws/';
-        fetch(SUMMARIZER_LAMBDA_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(summarizerPayload)
-        }).catch(err => console.error('⚠️ Failed to trigger summarizer:', err));
-        console.log('✅ Summarizer triggered for demo session');
+
       } catch (error) {
         console.error('⚠️ Failed to build summarizer trigger:', error);
       }
@@ -112,13 +109,7 @@ router.post('/', verifyAuth, async (req, res) => {
     conversationId: req.body.conversationId
   };
 
-  try {
-    console.log('📤 Sending to Lambda:', JSON.stringify(payload, null, 2));
-    const response = await fetch(CHAT_LAMBDA_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+
     console.log('📥 Lambda response status:', response.status);
     if (!response.ok) {
       const errorBody = await response.text();
@@ -139,13 +130,7 @@ router.post('/', verifyAuth, async (req, res) => {
             aiResponse: body.reply
           }
         };
-        const SUMMARIZER_LAMBDA_URL = process.env.SUMMARIZER_LAMBDA_URL || 'https://eyis5ss5ms7gzgar2uadqkm5sm0ixfqc.lambda-url.eu-west-1.on.aws/';
-        fetch(SUMMARIZER_LAMBDA_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(summarizerPayload)
-        }).catch(err => console.error('⚠️ Failed to trigger summarizer:', err));
-        console.log('✅ Summarizer triggered for user:', req.user.uid);
+
       } catch (error) {
         console.error('⚠️ Failed to build summarizer trigger:', error);
       }
