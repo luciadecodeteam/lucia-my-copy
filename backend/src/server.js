@@ -16,6 +16,11 @@ const app = express();
 // If running behind a proxy (API Gateway/ALB), keep this on
 app.set("trust proxy", true);
 
+// Handle OPTIONS preflight for all routes
+app.options('*', (req, res) => {
+  res.status(200).end();
+});
+
 // ----------------- CORS CONFIG -----------------
 const PROD_ORIGIN = "https://www.luciadecode.com";
 
