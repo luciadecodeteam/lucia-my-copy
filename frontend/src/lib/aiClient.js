@@ -146,18 +146,15 @@ function extractErrorReason(payload) {
   return null
 }
 
-export async function fetchChatCompletion({ url, prompt, history, token, demo, sessionId, signal }) {
+export async function fetchChatCompletion({ url, prompt, history, token, userId, conversationId, signal }) {
   try {
-    const body = { prompt, history };
-    if (demo) {
-      body.sessionId = sessionId;
-    }
+    const body = { userId, conversationId, message: prompt, history };
 
     const res = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token && !demo ? { Authorization: `Bearer ${token}` } : {})
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
       },
       body: JSON.stringify(body),
       signal

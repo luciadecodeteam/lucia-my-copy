@@ -368,11 +368,11 @@ async function sendDemoMessage() {
     const history = newMsgs.map(m => ({ role: m.role, content: m.content }));
     
     const result = await fetchChatCompletion({
-      url: '/api/chat/demo',
+      url: '/api/chat',
       prompt: content,
       history,
-      demo: true,
-      sessionId: demoSessionId
+      userId: null,
+      conversationId: demoSessionId
     });
 
     if (result.sessionId && result.sessionId !== demoSessionId) {
@@ -428,7 +428,9 @@ async function send() {
       url: CHAT_URL,
       prompt: content,
       history,
-      token
+      token,
+      userId: uid,
+      conversationId: cid
     })
 
     if (!result.ok) {

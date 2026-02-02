@@ -15,29 +15,8 @@ function trimTrailingSlashes(v) { return (v || "").replace(/\/+$/, ""); }
 function normalizePath(pathname) { return pathname ? pathname.replace(/\/+$/, "") : ""; }
 
 // ---------- CHAT URL (unchanged) ----------
-function ensureChatUrl(base, { preferPlainChat } = {}) {
-  const normalized = trimTrailingSlashes(base);
-  if (!normalized) return preferPlainChat ? "/chat" : "/api/chat";
-  if (normalized.endsWith("/api/chat") || normalized.endsWith("/chat")) return normalized;
-  if (normalized.endsWith("/api")) return `${normalized}/chat`;
-  return `${normalized}${preferPlainChat ? "/chat" : "/api/chat"}`;
-}
 export function chatUrl() {
-  const override = trimTrailingSlashes(import.meta.env.VITE_CHAT_URL || "");
-  if (override) return override;
-  const workerBase = trimTrailingSlashes(import.meta.env.VITE_WORKER_API_URL || "");
-  const functionsBase = trimTrailingSlashes(import.meta.env.VITE_FUNCTIONS_URL || "");
-  const base = workerBase || functionsBase || "";
-  if (!base) return "/api/chat";
-  const preferPlainChat = Boolean(workerBase && workerBase !== functionsBase);
-  try {
-    const url = new URL(base);
-    const path = normalizePath(url.pathname);
-    const root = path ? `${url.origin}${path}` : url.origin;
-    return ensureChatUrl(root, { preferPlainChat });
-  } catch {
-    return ensureChatUrl(base, { preferPlainChat });
-  }
+  return "/api/chat";
 }
 
 // ---------- PAYMENTS (hard-pinned) ----------
