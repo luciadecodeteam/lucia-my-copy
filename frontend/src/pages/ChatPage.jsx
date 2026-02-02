@@ -368,7 +368,7 @@ async function sendDemoMessage() {
     const history = newMsgs.map(m => ({ role: m.role, content: m.content }));
     
     const result = await fetchChatCompletion({
-      url: '/api/chat',
+      url: CHAT_URL,
       prompt: content,
       history,
       userId: null,

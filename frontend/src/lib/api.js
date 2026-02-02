@@ -16,7 +16,8 @@ function normalizePath(pathname) { return pathname ? pathname.replace(/\/+$/, ""
 
 // ---------- CHAT URL (unchanged) ----------
 export function chatUrl() {
-  return "/api/chat";
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://lucia-my-copy.vercel.app';
+  return `${BACKEND_URL}/api/chat`;
 }
 
 // ---------- PAYMENTS (hard-pinned) ----------
