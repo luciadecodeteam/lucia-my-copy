@@ -70,6 +70,18 @@ router.post('/demo', async (req, res) => {
             aiResponse: body.reply
           }
         };
+        fetch(SUMMARIZER_LAMBDA_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(summarizerPayload)
+        }).then(res => {
+          console.log('✅ Summarizer lambda triggered:', res.status);
+          return res.text();
+        }).then(text => {
+          console.log('✅ Summarizer response body:', text);
+        }).catch(err => {
+          console.error('❌ Summarizer lambda error:', err);
+        });
 
       } catch (error) {
         console.error('⚠️ Failed to build summarizer trigger:', error);
@@ -130,6 +142,18 @@ router.post('/', verifyAuth, async (req, res) => {
             aiResponse: body.reply
           }
         };
+        fetch(SUMMARIZER_LAMBDA_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(summarizerPayload)
+        }).then(res => {
+          console.log('✅ Summarizer lambda triggered:', res.status);
+          return res.text();
+        }).then(text => {
+          console.log('✅ Summarizer response body:', text);
+        }).catch(err => {
+          console.error('❌ Summarizer lambda error:', err);
+        });
 
       } catch (error) {
         console.error('⚠️ Failed to build summarizer trigger:', error);
