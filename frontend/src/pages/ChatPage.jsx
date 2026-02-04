@@ -353,99 +353,125 @@ export default function ChatPage() {
   }
   function handleCourtesyDecline() { setShowCourtesy(false); setCapHit(true) }
 
-async function sendDemoMessage() {
-  const content = text.trim();
-  if (!content) return;
-  
-  const newUserMessage = { id: Date.now(), role: 'user', content };
-  const newMsgs = [...msgs, newUserMessage];
-  
-  setMsgs(newMsgs);
-  setBusy(true);
-  setText("");
-
-  try {
-    const history = newMsgs.map(m => ({ role: m.role, content: m.content }));
+  async function sendDemoMessage() {
+    const content = text.trim();
+    if (!content) return;
     
-    const result = await fetchChatCompletion({
-      url: CHAT_URL,
-      prompt: content,
-      history,
-      userId: null,
-      conversationId: demoSessionId
-    });
+    const newUserMessage = { id: Date.now(), role: 'user', content };
+    const newMsgs = [...msgs, newUserMessage];
+    
+    setMsgs(newMsgs);
+    setBusy(true);
+    setText("");
 
-    if (result.sessionId && result.sessionId !== demoSessionId) {
-      sessionStorage.setItem('demoSessionId', result.sessionId);
-      setDemoSessionId(result.sessionId);
-    }
+    try {
+      const history = newMsgs.map(m => ({ role: m.role, content: m.content }));
+      
+      const result = await fetchChatCompletion({
+        url: CHAT_URL,
+        prompt: content,
+        history,
+        userId: null,
+        conversationId: demoSessionId
+      });
 
-    if (result.ok) {
-      setMsgs(prev => [...prev, { id: Date.now() + 1, role: 'assistant', content: result.content }]);
-    } else {
-      setMsgs(prev => [...prev, { id: Date.now() + 1, role: 'system', content: `⚠️ ${result.reason}` }]);
-    }
-  } catch (err) {
-    console.error(err);
-    setMsgs(prev => [...prev, { id: Date.now() + 1, role: 'system', content: `⚠️ An unexpected error occurred.` }]);
-  } finally {
-    setBusy(false);
-  }
-}
-
-async function send() {
-  const content = text.trim()
-  if (!content) return
-  setBusy(true)
-  setText("")
-  try {
-    const uid = await ensureLogin()
-    let cid = conversationId
-    if (!cid) {
-      const title = content.slice(0, 48)
-      cid = await createConversation(uid, title, "")
-      const url = new URL(window.location.href)
-      url.searchParams.set("c", cid)
-      window.history.replaceState({}, "", url)
-      setConversationId(cid)
-    } else if (msgs.length === 0) {
-      await setConversationTitle(uid, cid, content.slice(0, 48))
-    }
-    if (!quota.unlimited) {
-      if (quota.courtesyAvailable && !quota.courtesyUsed && quota.used === quota.base) {
-        setShowCourtesy(true); setBusy(false); return
+      if (result.sessionId && result.sessionId !== demoSessionId) {
+        sessionStorage.setItem('demoSessionId', result.sessionId);
+        setDemoSessionId(result.sessionId);
       }
-      const cap = quota.courtesyAvailable && quota.courtesyUsed ? quota.courtesyCap : quota.base
-      if (Number.isFinite(cap) && quota.used >= cap) { setCapHit(true); setBusy(false); return }
+
+      if (result.ok) {
+        setMsgs(prev => [...prev, { id: Date.now() + 1, role: 'assistant', content: result.content }]);
+        
+        // ✅ NEW: Trigger summarizer
+        fetch('/api/chat/summarize-demo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: result.sessionId || demoSessionId,
+            userMessage: content,
+            aiResponse: result.content
+          })
+        }).catch(err => console.error('Summarizer failed:', err));
+        
+      } else {
+        setMsgs(prev => [...prev, { id: Date.now() + 1, role: 'system', content: `⚠️ ${result.reason}` }]);
+      }
+    } catch (err) {
+      console.error(err);
+      setMsgs(prev => [...prev, { id: Date.now() + 1, role: 'system', content: `⚠️ An unexpected error occurred.` }]);
+    } finally {
+      setBusy(false);
     }
-    await addMessage(uid, cid, "user", content)
-    
-    // FIXED: Convert messages to history format and use correct request format
-    const history = msgs.map(m => ({ role: m.role, content: m.content }))
-    const token = await getIdToken()
+  }
 
-    const result = await fetchChatCompletion({
-      url: CHAT_URL,
-      prompt: content,
-      history,
-      token,
-      userId: uid,
-      conversationId: cid
-    })
+  async function send() {
+    const content = text.trim()
+    if (!content) return
+    setBusy(true)
+    setText("")
+    try {
+      const uid = await ensureLogin()
+      let cid = conversationId
+      if (!cid) {
+        const title = content.slice(0, 48)
+        cid = await createConversation(uid, title, "")
+        const url = new URL(window.location.href)
+        url.searchParams.set("c", cid)
+        window.history.replaceState({}, "", url)
+        setConversationId(cid)
+      } else if (msgs.length === 0) {
+        await setConversationTitle(uid, cid, content.slice(0, 48))
+      }
+      if (!quota.unlimited) {
+        if (quota.courtesyAvailable && !quota.courtesyUsed && quota.used === quota.base) {
+          setShowCourtesy(true); setBusy(false); return
+        }
+        const cap = quota.courtesyAvailable && quota.courtesyUsed ? quota.courtesyCap : quota.base
+        if (Number.isFinite(cap) && quota.used >= cap) { setCapHit(true); setBusy(false); return }
+      }
+      await addMessage(uid, cid, "user", content)
+      
+      const history = msgs.map(m => ({ role: m.role, content: m.content }))
+      const token = await getIdToken()
 
-    if (!result.ok) {
-      await addMessage(uid, cid, "system", `⚠️ ${result.reason}`)
+      const result = await fetchChatCompletion({
+        url: CHAT_URL,
+        prompt: content,
+        history,
+        token,
+        userId: uid,
+        conversationId: cid
+      })
+
+      if (!result.ok) {
+        await addMessage(uid, cid, "system", `⚠️ ${result.reason}`)
+        await bumpUpdatedAt(uid, cid)
+        return
+      }
+
+      await addMessage(uid, cid, "assistant", result.content)
       await bumpUpdatedAt(uid, cid)
-      return
-    }
-
-    await addMessage(uid, cid, "assistant", result.content)
-    await bumpUpdatedAt(uid, cid)
-    if (!quota.unlimited) await safeIncrementUsage(uid)
-  } catch (err) {
-    if (String(err?.message || "").toLowerCase() !== "login required") console.error(err)
-  } finally { setBusy(false) }
-}
+      
+      // ✅ NEW: Trigger summarizer
+      fetch('/api/chat/summarize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          conversationId: cid,
+          userMessage: content,
+          aiResponse: result.content
+        })
+      }).catch(err => console.error('Summarizer failed:', err));
+      
+      if (!quota.unlimited) await safeIncrementUsage(uid)
+    } catch (err) {
+      if (String(err?.message || "").toLowerCase() !== "login required") console.error(err)
+    } finally { setBusy(false) }
+  }
 
   function cancel() { setBusy(false) }
 
