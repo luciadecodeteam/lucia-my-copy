@@ -25,78 +25,39 @@ router.post('/demo', async (req, res) => {
     return res.status(400).send("prompt_required");
   }
 
-  let sessionId = req.body?.sessionId;
-  let newSessionId = null;
-  if (!sessionId) {
-    sessionId = crypto.randomUUID();
-    newSessionId = sessionId; // Flag to send it back to the client
-  }
-
+  let sessionId = req.body?.sessionId || crypto.randomUUID();
   const history = sanitizeHistory(req.body?.history);
-  
-
+  const messages = [...history, { role: 'user', content: prompt }];
 
   const payload = {
     mode: "chat",
-    prompt: prompt,
-    userId: sessionId, // For demo, session ID is the user identifier
-    conversationId: sessionId
+    userId: sessionId,
+    conversationId: sessionId,
+    messages: messages
   };
 
   try {
-
-    console.log('📤 Sending to Lambda:', JSON.stringify(payload, null, 2));
+    console.log('📤 Sending to Lambda (Demo):', JSON.stringify(payload, null, 2));
+    
     const response = await fetch(CHAT_LAMBDA_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    console.log('📥 Lambda response status:', response.status);
+    
     if (!response.ok) {
       const errorBody = await response.text();
       console.error('❌ Lambda error response:', errorBody);
       throw new Error(`Lambda returned ${response.status}: ${errorBody}`);
     }
+    
     const body = await response.json();
     console.log('✅ Lambda success:', body);
 
     if (body.reply) {
-      // Trigger summarizer async (fire-and-forget)
-      try {
-        const summarizerPayload = {
-          userId: sessionId, // For demo, session ID is the user identifier
-          conversationTurn: {
-            userMessage: prompt,
-            aiResponse: body.reply
-          }
-        };
-        fetch(SUMMARIZER_LAMBDA_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(summarizerPayload)
-        }).then(res => {
-          console.log('✅ Summarizer lambda triggered:', res.status);
-          return res.text();
-        }).then(text => {
-          console.log('✅ Summarizer response body:', text);
-        }).catch(err => {
-          console.error('❌ Summarizer lambda error:', err);
-        });
-
-      } catch (error) {
-        console.error('⚠️ Failed to build summarizer trigger:', error);
-      }
-
-      const responsePayload = { reply: body.reply };
-      if (newSessionId) {
-        responsePayload.sessionId = newSessionId;
-      }
-      return res.json(responsePayload);
-
-    } else if (body.error) {
-      return res.status(502).json({ error: body.error });
+      return res.json({ reply: body.reply, sessionId });
     } else {
-      return res.status(502).json({ error: 'unexpected_response', body });
+      return res.status(502).json({ error: body.error || 'unexpected_response' });
     }
   } catch (err) {
     console.error('Lambda invoke failed', err);
@@ -104,6 +65,7 @@ router.post('/demo', async (req, res) => {
   }
 });
 
+// Authenticated chat endpoint
 router.post('/', verifyAuth, async (req, res) => {
   const prompt = (req.body.prompt || req.body.message || '').toString();
   if (!prompt.trim()) {
@@ -111,63 +73,117 @@ router.post('/', verifyAuth, async (req, res) => {
   }
 
   const history = sanitizeHistory(req.body?.history);
-  
-
+  const messages = [...history, { role: 'user', content: prompt }];
 
   const payload = {
     mode: "chat",
-    prompt: prompt,
     userId: req.user.uid,
-    conversationId: req.body.conversationId
+    conversationId: req.body.conversationId,
+    messages: messages
   };
 
-
-    console.log('📥 Lambda response status:', response.status);
+  try {
+    console.log('📤 Sending to Lambda (Auth):', JSON.stringify(payload, null, 2));
+    
+    const response = await fetch(CHAT_LAMBDA_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
     if (!response.ok) {
       const errorBody = await response.text();
       console.error('❌ Lambda error response:', errorBody);
       throw new Error(`Lambda returned ${response.status}: ${errorBody}`);
     }
+    
     const body = await response.json();
     console.log('✅ Lambda success:', body);
 
-    // normalize what your frontend expects
     if (body.reply) {
-      // Trigger summarizer async (fire-and-forget)
-      try {
-        const summarizerPayload = {
-          userId: req.user.uid,
-          conversationTurn: {
-            userMessage: prompt,
-            aiResponse: body.reply
-          }
-        };
-        fetch(SUMMARIZER_LAMBDA_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(summarizerPayload)
-        }).then(res => {
-          console.log('✅ Summarizer lambda triggered:', res.status);
-          return res.text();
-        }).then(text => {
-          console.log('✅ Summarizer response body:', text);
-        }).catch(err => {
-          console.error('❌ Summarizer lambda error:', err);
-        });
-
-      } catch (error) {
-        console.error('⚠️ Failed to build summarizer trigger:', error);
-      }
-
       return res.json({ reply: body.reply });
-    } else if (body.error) {
-      return res.status(502).json({ error: body.error });
     } else {
-      return res.status(502).json({ error: 'unexpected_response', body });
+      return res.status(502).json({ error: body.error || 'unexpected_response' });
     }
   } catch (err) {
     console.error('Lambda invoke failed', err);
     return res.status(502).json({ error: 'lambda_invoke_failed', message: err.message });
+  }
+});
+
+// ✅ NEW: Summarizer endpoint
+router.post('/summarize', verifyAuth, async (req, res) => {
+  const { conversationId, userMessage, aiResponse } = req.body;
+  
+  if (!conversationId || !userMessage || !aiResponse) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  const summarizerPayload = {
+    userId: req.user.uid,
+    conversationId,
+    conversationTurn: { userMessage, aiResponse }
+  };
+
+  console.log('🔔 Summarizer called:', req.user.uid, conversationId);
+
+  try {
+    const response = await fetch(SUMMARIZER_LAMBDA_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(summarizerPayload)
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error('❌ Summarizer error:', response.status, errorBody);
+      return res.status(response.status).json({ error: errorBody });
+    }
+
+    const result = await response.json();
+    console.log('✅ Summarizer success:', result);
+    return res.json(result);
+  } catch (err) {
+    console.error('⚠️ Summarizer failed:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ NEW: Demo summarizer endpoint (unauthenticated)
+router.post('/summarize-demo', async (req, res) => {
+  const { sessionId, userMessage, aiResponse } = req.body;
+  
+  if (!sessionId || !userMessage || !aiResponse) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  const summarizerPayload = {
+    userId: sessionId,
+    conversationId: sessionId,
+    conversationTurn: { userMessage, aiResponse }
+  };
+
+  console.log('🔔 Summarizer called (Demo):', sessionId);
+
+  try {
+    const response = await fetch(SUMMARIZER_LAMBDA_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(summarizerPayload)
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error('❌ Summarizer error (Demo):', response.status, errorBody);
+      return res.status(response.status).json({ error: errorBody });
+    }
+
+    const result = await response.json();
+    console.log('✅ Summarizer success (Demo):', result);
+    return res.json(result);
+  } catch (err) {
+    console.error('⚠️ Summarizer failed (Demo):', err.message);
+    return res.status(500).json({ error: err.message });
   }
 });
 
