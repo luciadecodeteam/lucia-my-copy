@@ -16,6 +16,13 @@ const app = express();
 // If running behind a proxy (API Gateway/ALB), keep this on
 app.set("trust proxy", true);
 
+app.options('/api/*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  res.sendStatus(200);
+});
+
 // ----------------- CORS CONFIG -----------------
 app.use(cors({
   origin: '*',
