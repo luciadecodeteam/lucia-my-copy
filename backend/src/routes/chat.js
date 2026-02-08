@@ -76,9 +76,7 @@ router.post('/', async (req, res) => {
   const messages = [...history, { role: 'user', content: prompt }];
 
   const payload = {
-    mode: "chat",
-    userId: req.user.uid,
-    conversationId: req.body.conversationId,
+    userId: req.body.sessionId || crypto.randomUUID(),
     messages: messages
   };
 
@@ -120,7 +118,7 @@ router.post('/summarize', async (req, res) => {
   }
 
   const summarizerPayload = {
-    userId: req.user.uid,
+    userId: req.body.sessionId || crypto.randomUUID(),
     conversationId,
     conversationTurn: { userMessage, aiResponse }
   };
