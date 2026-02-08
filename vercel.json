@@ -4,6 +4,16 @@
     { "src": "frontend/package.json", "use": "@vercel/static-build" },
     { "src": "backend/src/server.js", "use": "@vercel/node" }
   ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,POST,OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type,Authorization" }
+      ]
+    }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/backend/src/server.js" }
   ]
