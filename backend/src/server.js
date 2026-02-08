@@ -16,14 +16,9 @@ const app = express();
 // If running behind a proxy (API Gateway/ALB), keep this on
 app.set("trust proxy", true);
 
-// Handle OPTIONS preflight for all routes
-app.options('*', (req, res) => {
-  res.status(200).end();
-});
-
 // ----------------- CORS CONFIG -----------------
 app.use(cors({
-  origin: 'https://lucia-phi.vercel.app',
+  origin: '*',
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']

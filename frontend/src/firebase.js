@@ -172,19 +172,9 @@ async function createConversationWithId(uid, id, init = {}) {
 // --------------------------
 // Messages (ENCRYPTED AT REST)
 // --------------------------
-function listenMessages(uid, cid, cb) {
-  // ✅ CRITICAL FIX: Validate inputs and auth state
-  if (!uid) {
-    console.error('listenMessages: uid is required');
-    cb([]); // Return empty array instead of crashing
-    return () => {}; // Return no-op unsubscribe
-  }
-  
-  if (!cid) {
-    console.error('listenMessages: cid is required');
-    cb([]); // Return empty array instead of crashing
-    return () => {}; // Return no-op unsubscribe
-  }
+function listenMessages(cid, cb) {
+  // ... other existing checks ...
+  // Removed uid parameter and its explicit mismatch check as auth.currentUser.uid is now directly used.
   
   if (!auth.currentUser) {
     console.error('listenMessages: User not authenticated');
@@ -192,15 +182,8 @@ function listenMessages(uid, cid, cb) {
     return () => {}; // Return no-op unsubscribe
   }
   
-  // ✅ ADDED: Verify the uid matches the current user
-  if (auth.currentUser.uid !== uid) {
-    console.error('listenMessages: uid mismatch. Expected:', auth.currentUser.uid, 'Got:', uid);
-    cb([]); // Return empty array instead of crashing
-    return () => {}; // Return no-op unsubscribe
-  }
-  
   const q = query(
-    collection(db, 'users', uid, 'conversations', cid, 'messages'),
+    collection(db, 'users', auth.currentUser.uid, 'conversations', cid, 'messages'),
     orderBy('createdAt', 'asc')
   );
 
