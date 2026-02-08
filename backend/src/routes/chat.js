@@ -1,7 +1,7 @@
 // server/routes/chat.js
 const router = require('express').Router();
 const crypto = require('crypto');
-const { verifyAuth } = require('../lib/authMiddleware');
+
 
 const CHAT_LAMBDA_URL = process.env.CHAT_LAMBDA_URL || 'https://acmjtgoc47eieiii6gksw3bx6u0feemy.lambda-url.eu-west-1.on.aws/';
 const SUMMARIZER_LAMBDA_URL = process.env.SUMMARIZER_LAMBDA_URL || 'https://eyis5ss5ms7gzgar2uadqkm5sm0ixfqc.lambda-url.eu-west-1.on.aws/';
@@ -66,7 +66,7 @@ router.post('/demo', async (req, res) => {
 });
 
 // Authenticated chat endpoint
-router.post('/', verifyAuth, async (req, res) => {
+router.post('/', async (req, res) => {
   const prompt = (req.body.prompt || req.body.message || '').toString();
   if (!prompt.trim()) {
     return res.status(400).send("prompt_required");
@@ -112,7 +112,7 @@ router.post('/', verifyAuth, async (req, res) => {
 });
 
 // ✅ NEW: Summarizer endpoint
-router.post('/summarize', verifyAuth, async (req, res) => {
+router.post('/summarize', async (req, res) => {
   const { conversationId, userMessage, aiResponse } = req.body;
   
   if (!conversationId || !userMessage || !aiResponse) {
