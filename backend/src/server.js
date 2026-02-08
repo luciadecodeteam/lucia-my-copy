@@ -8,7 +8,7 @@ const helmet = require("helmet");
 // Routers / handlers (keep your existing files)
 
 const chat = require("./routes/chat");
-const files = require("./routes/files");
+
 const { router: stripeRouter, payRouter, webhookHandler } = require("./routes/payments");
 
 const app = express();
@@ -47,7 +47,7 @@ app.get("/healthz", (_req, res) => res.status(200).json({ ok: true }));
 // API routes (mounted under /api)
 
 app.use("/api/chat", chat);
-app.use("/api/files", files);
+
 
 // Payments API (e.g., POST /api/pay/checkout)
 /**
