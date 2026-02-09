@@ -454,7 +454,7 @@ export default function ChatPage() {
       await bumpUpdatedAt(uid, cid)
       
       // ✅ NEW: Trigger summarizer
-      fetch('/api/chat/summarize', {
+      fetch(`${CHAT_URL}/summarize`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
