@@ -126,8 +126,7 @@ router.post('/summarize', async (req, res) => {
     conversationTurn: { userMessage, aiResponse }
   };
 
-  console.log('🔔 Summarizer called:', req.user.uid, conversationId);
-
+     console.log('🔔 Summarizer called:', conversationId);
   try {
     const response = await fetch(SUMMARIZER_LAMBDA_URL, {
       method: 'POST',
