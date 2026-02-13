@@ -384,7 +384,7 @@ export default function ChatPage() {
         setMsgs(prev => [...prev, { id: Date.now() + 1, role: 'assistant', content: result.content }]);
         
         // ✅ NEW: Trigger summarizer
-        fetch('/api/chat/summarize-demo', {
+       fetch(`${CHAT_URL}/summarize-demo`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -454,16 +454,19 @@ export default function ChatPage() {
       await bumpUpdatedAt(uid, cid)
       
       // ✅ NEW: Trigger summarizer
-      fetch(`${CHAT_URL}/summarize`, {
+fetch(`${CHAT_URL}/summarize`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          conversationId: cid,
-          userMessage: content,
-          aiResponse: result.content
+          userId: uid, // <--- ADDED: Required for Second Brain
+          conversationId: cid, 
+          conversationTurn: { // <--- NESTED: Matches new Backend structure
+            userMessage: content,
+            aiResponse: result.content
+          }
         })
       }).catch(err => console.error('Summarizer failed:', err));
       
