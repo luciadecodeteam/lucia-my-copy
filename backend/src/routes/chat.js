@@ -115,8 +115,6 @@ router.post('/summarize', async (req, res) => {
   const { userId, conversationId, conversationTurn } = req.body;
   
   if (!userId || !conversationId || !conversationTurn?.userMessage || !conversationTurn?.aiResponse) {
-        console.log('❌ VALIDATION FAILED:', { userId, conversationId, conversationTurn }); // ← ADD THIS LINE
-
     return res
       .status(400)
       .json({ error: 'Missing userId, conversationId, or conversationTurn fields' });

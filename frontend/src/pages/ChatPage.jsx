@@ -405,76 +405,82 @@ export default function ChatPage() {
     }
   }
 
-  async function send() {
-    const content = text.trim()
-    if (!content) return
-    setBusy(true)
-    setText("")
-    try {
-      const uid = await ensureLogin()
-      let cid = conversationId
-      if (!cid) {
-        const title = content.slice(0, 48)
-        cid = await createConversation(uid, title, "")
-        const url = new URL(window.location.href)
-        url.searchParams.set("c", cid)
-        window.history.replaceState({}, "", url)
-        setConversationId(cid)
-      } else if (msgs.length === 0) {
-        await setConversationTitle(uid, cid, content.slice(0, 48))
+  // 
+async function send() {
+  const content = text.trim()
+  if (!content) return
+  setBusy(true)
+  setText("")
+  try {
+    const uid = await ensureLogin()
+    let cid = conversationId
+    if (!cid) {
+      const title = content.slice(0, 48)
+      cid = await createConversation(uid, title, "")
+      const url = new URL(window.location.href)
+      url.searchParams.set("c", cid)
+      window.history.replaceState({}, "", url)
+      setConversationId(cid)
+    } else if (msgs.length === 0) {
+      await setConversationTitle(uid, cid, content.slice(0, 48))
+    }
+    if (!quota.unlimited) {
+      if (quota.courtesyAvailable && !quota.courtesyUsed && quota.used === quota.base) {
+        setShowCourtesy(true); setBusy(false); return
       }
-      if (!quota.unlimited) {
-        if (quota.courtesyAvailable && !quota.courtesyUsed && quota.used === quota.base) {
-          setShowCourtesy(true); setBusy(false); return
-        }
-        const cap = quota.courtesyAvailable && quota.courtesyUsed ? quota.courtesyCap : quota.base
-        if (Number.isFinite(cap) && quota.used >= cap) { setCapHit(true); setBusy(false); return }
-      }
-      await addMessage(uid, cid, "user", content)
-      
-      const history = msgs.map(m => ({ role: m.role, content: m.content }))
-      const token = await getIdToken()
+      const cap = quota.courtesyAvailable && quota.courtesyUsed ? quota.courtesyCap : quota.base
+      if (Number.isFinite(cap) && quota.used >= cap) { setCapHit(true); setBusy(false); return }
+    }
+    await addMessage(uid, cid, "user", content)
+    
+    const history = msgs.map(m => ({ role: m.role, content: m.content }))
+    const token = await getIdToken()
 
-      const result = await fetchChatCompletion({
-        url: CHAT_URL,
-        prompt: content,
-        history,
-        token,
-        userId: uid,
-        conversationId: cid
-      })
+    const result = await fetchChatCompletion({
+      url: CHAT_URL,
+      prompt: content,
+      history,
+      token,
+      userId: uid,
+      conversationId: cid
+    })
 
-      if (!result.ok) {
-        await addMessage(uid, cid, "system", `⚠️ ${result.reason}`)
-        await bumpUpdatedAt(uid, cid)
-        return
-      }
-
-      await addMessage(uid, cid, "assistant", result.content)
+    if (!result.ok) {
+      await addMessage(uid, cid, "system", `⚠️ ${result.reason}`)
       await bumpUpdatedAt(uid, cid)
-      
-      // ✅ NEW: Trigger summarizer
-fetch(`${CHAT_URL}/summarize`, {
+      return
+    }
+
+    const aiResponse = result.content || result.reply || ''  // ← FIX: Handle both
+    
+    await addMessage(uid, cid, "assistant", aiResponse)
+    await bumpUpdatedAt(uid, cid)
+    
+    // ✅ Fixed summarizer call
+    if (aiResponse) {  // ← Only call if we have a response
+      fetch(`${CHAT_URL}/summarize`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          userId: uid, // <--- ADDED: Required for Second Brain
-          conversationId: cid, 
-          conversationTurn: { // <--- NESTED: Matches new Backend structure
+          userId: uid,
+          conversationId: cid,
+          conversationTurn: {
             userMessage: content,
-            aiResponse: result.content
+            aiResponse: aiResponse  // ← Use the variable
           }
         })
       }).catch(err => console.error('Summarizer failed:', err));
-      
-      if (!quota.unlimited) await safeIncrementUsage(uid)
-    } catch (err) {
-      if (String(err?.message || "").toLowerCase() !== "login required") console.error(err)
-    } finally { setBusy(false) }
-  }
+    }
+    
+    if (!quota.unlimited) await safeIncrementUsage(uid)
+  } catch (err) {
+    if (String(err?.message || "").toLowerCase() !== "login required") console.error(err)
+  } finally { setBusy(false) }
+}
+  //
 
   function cancel() { setBusy(false) }
 
