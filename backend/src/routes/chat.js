@@ -77,7 +77,7 @@ router.post('/', async (req, res) => {
 
  const payload = {
   mode: "chat",
-  userId: req.body.sessionId, // must be provided by frontend (uid)
+  userId: req.body.userId, // must be provided by frontend (uid)
   conversationId: req.body.conversationId,
   messages: messages
 };
