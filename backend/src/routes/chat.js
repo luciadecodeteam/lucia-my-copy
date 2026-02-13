@@ -111,22 +111,23 @@ router.post('/', async (req, res) => {
   }
 });
 
-// ✅ NEW: Summarizer endpoint
+// ✅ CORRECTED: Summarizer endpoint
 router.post('/summarize', async (req, res) => {
-  const { conversationId, userMessage, aiResponse } = req.body;
+  const { userId, conversationId, conversationTurn } = req.body;
   
-  if (!conversationId || !userMessage || !aiResponse) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  if (!userId || !conversationId || !conversationTurn?.userMessage || !conversationTurn?.aiResponse) {
+    return res
+      .status(400)
+      .json({ error: 'Missing userId, conversationId, or conversationTurn fields' });
   }
 
   const summarizerPayload = {
-    mode: "summarize",
-    userId: req.body.sessionId || crypto.randomUUID(),
+    userId,           // ✅ Now correct
     conversationId,
-    conversationTurn: { userMessage, aiResponse }
+    conversationTurn  // ✅ Already in correct structure
   };
 
-     console.log('🔔 Summarizer called:', conversationId);
+  console.log('🔔 Summarizer called:', userId, conversationId);
   try {
     const response = await fetch(SUMMARIZER_LAMBDA_URL, {
       method: 'POST',
