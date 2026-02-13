@@ -75,13 +75,12 @@ router.post('/', async (req, res) => {
   const history = sanitizeHistory(req.body?.history);
   const messages = [...history, { role: 'user', content: prompt }];
 
-  const payload = {
-    mode: "chat",
-    userId: req.body.sessionId || crypto.randomUUID(),
-    conversationId: req.body.conversationId,
-    messages: messages
-  };
-
+ const payload = {
+  mode: "chat",
+  userId: req.body.sessionId, // must be provided by frontend (uid)
+  conversationId: req.body.conversationId,
+  messages: messages
+};
   try {
     console.log('📤 Sending to Lambda (Auth):', JSON.stringify(payload, null, 2));
     
@@ -116,15 +115,17 @@ router.post('/summarize', async (req, res) => {
   const { userId, conversationId, conversationTurn } = req.body;
   
   if (!userId || !conversationId || !conversationTurn?.userMessage || !conversationTurn?.aiResponse) {
+        console.log('❌ VALIDATION FAILED:', { userId, conversationId, conversationTurn }); // ← ADD THIS LINE
+
     return res
       .status(400)
       .json({ error: 'Missing userId, conversationId, or conversationTurn fields' });
   }
 
   const summarizerPayload = {
-    userId,           // ✅ Now correct
+    userId,
     conversationId,
-    conversationTurn  // ✅ Already in correct structure
+    conversationTurn
   };
 
   console.log('🔔 Summarizer called:', userId, conversationId);
