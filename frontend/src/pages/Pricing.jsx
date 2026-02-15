@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useAuthToken } from '../hooks/useAuthToken';
 import { startCheckout, stripeEnabled, cancelSubscription } from '../lib/api';
-import { getUserData } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import '../styles/pricing.css';
 
 const PLANS = [
@@ -17,7 +18,16 @@ export default function Pricing({ onClose }) {
 
   useEffect(() => {
     if (!user?.uid) return;
-    getUserData(user.uid).then(data => setProfile(data));
+    
+    async function loadProfile() {
+      const docRef = doc(db, 'users', user.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        setProfile(docSnap.data());
+      }
+    }
+    
+    loadProfile();
   }, [user?.uid]);
 
   const currentTier = profile?.tier || 'free';
