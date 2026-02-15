@@ -88,4 +88,21 @@ export async function createPortalSession({ uid, email }) {
   return res.json();
 }
 
+export async function cancelSubscription({ uid }) {
+  const token = await getIdToken();
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://lucia-backend-seven.vercel.app';
+  
+  const res = await fetch(`${BACKEND_URL}/api/chat/cancel-subscription`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
+    body: JSON.stringify({ uid })
+  });
+  
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export { fetchChatCompletion } from "./aiClient";

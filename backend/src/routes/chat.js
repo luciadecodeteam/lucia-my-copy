@@ -165,4 +165,35 @@ router.post('/summarize-demo', async (req, res) => {
   }
 });
 
+// Cancel subscription endpoint
+router.post('/cancel-subscription', async (req, res) => {
+  const { uid } = req.body;
+  
+  if (!uid) {
+    return res.status(400).json({ error: 'Missing uid' });
+  }
+
+  const CHECKOUT_FUNCTION_URL = "https://lt2masjrrscsh556e35szjp4u40yaifr.lambda-url.eu-west-1.on.aws";
+  const cancelPayload = { uid };
+
+  try {
+    const response = await fetch(`${CHECKOUT_FUNCTION_URL}/api/pay/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cancelPayload)
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      return res.status(response.status).json({ error: errorBody });
+    }
+
+    const result = await response.json();
+    return res.json(result);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+
 module.exports = router;
