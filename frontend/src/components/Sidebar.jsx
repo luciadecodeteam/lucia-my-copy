@@ -66,33 +66,52 @@ export default function Sidebar({ open, onClose }) {
     return () => window.removeEventListener('click', onClick)
   }, [])
 
-  useEffect(() => {
-    if (!user?.uid) return
-    setConvos([])
-    setLoadingConvos(true)
+useEffect(() => {
+  if (!user?.uid) return
+  setConvos([])
+  setLoadingConvos(true)
 
-    const q = query(
-      collection(db, 'users', user.uid, 'conversations'),
-      orderBy('updatedAt', 'desc')
-    )
-    const unsub = onSnapshot(q, (snap) => {
-      const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      const list = rows.filter(c => {
-        const tNew = (c.title || '').toLowerCase() === 'new chat'
-        const upd = c.updatedAt?.toMillis?.() ?? 0
-        const crt = c.createdAt?.toMillis?.() ?? 0
-        const deleted = Boolean(c.deletedAt)
-        return (!tNew || upd > crt) && !deleted
-      })
-      setConvos(prev => {
-        const optimistic = prev.filter(x => x.__optimistic && !list.find(y => y.id === x.id))
-        return [...optimistic, ...list]
-      })
-      setLoadingConvos(false)
-    }, () => setLoadingConvos(false))
+  const q = query(
+    collection(db, 'users', user.uid, 'conversations'),
+    orderBy('updatedAt', 'desc')
+  )
+  const unsub = onSnapshot(q, async (snap) => {
+    const rows = await Promise.all(snap.docs.map(async (d) => {
+      const data = d.data();
+      
+      // Decrypt title
+      let title = data.title || 'Untitled'; // Legacy plaintext fallback
+      if (data.titleCiphertext && data.titleIv) {
+        const { decryptTitle } = await import('../firebase');
+        title = await decryptTitle(user.uid, data.titleCiphertext, data.titleIv);
+      }
+      
+      return { 
+        id: d.id, 
+        title,
+        folder: data.folder,
+        updatedAt: data.updatedAt,
+        createdAt: data.createdAt,
+        deletedAt: data.deletedAt
+      };
+    }));
+    
+    const list = rows.filter(c => {
+      const tNew = (c.title || '').toLowerCase() === 'new chat'
+      const upd = c.updatedAt?.toMillis?.() ?? 0
+      const crt = c.createdAt?.toMillis?.() ?? 0
+      const deleted = Boolean(c.deletedAt)
+      return (!tNew || upd > crt) && !deleted
+    })
+    setConvos(prev => {
+      const optimistic = prev.filter(x => x.__optimistic && !list.find(y => y.id === x.id))
+      return [...optimistic, ...list]
+    })
+    setLoadingConvos(false)
+  }, () => setLoadingConvos(false))
 
-    return () => unsub()
-  }, [user?.uid])
+  return () => unsub()
+}, [user?.uid])
 
   const folders = useMemo(() => {
     const s = new Set()

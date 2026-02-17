@@ -94,6 +94,18 @@ async function decryptForUser(uid, ciphertextB64, ivB64) {
   return TEXT.dec.decode(ptBuf);
 }
 
+async function encryptTitle(uid, title) {
+  return encryptForUser(uid, title);
+}
+
+async function decryptTitle(uid, ciphertextB64, ivB64) {
+  try {
+    return await decryptForUser(uid, ciphertextB64, ivB64);
+  } catch {
+    return '[Encrypted]'; // Fallback if decryption fails
+  }
+}
+
 // --------------------------
 // User and conversations
 // --------------------------
@@ -118,8 +130,13 @@ async function getUserData(uid) {
 }
 
 async function createConversation(uid, title = 'New chat', system = '') {
+  const { ciphertext, iv } = await encryptTitle(uid, title);
   const ref = await addDoc(collection(db, 'users', uid, 'conversations'), {
-    title, system, createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    titleCiphertext: ciphertext,
+    titleIv: iv,
+    system,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
   });
   return ref.id;
 }
@@ -129,9 +146,11 @@ function newConversationId(uid) {
 }
 
 async function createConversationWithId(uid, id, init = {}) {
+  const { ciphertext, iv } = await encryptTitle(uid, init.title ?? 'New chat');
   const ref = doc(db, 'users', uid, 'conversations', id);
   await setDoc(ref, {
-    title: init.title ?? 'New chat',
+    titleCiphertext: ciphertext,
+    titleIv: iv,
     system: init.system ?? '',
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -264,8 +283,11 @@ async function markCourtesyUsed(uid) {
 }
 
 async function setConversationTitle(uid, cid, title) {
+  const { ciphertext, iv } = await encryptTitle(uid, title);
   await updateDoc(doc(db, 'users', uid, 'conversations', cid), {
-    title, updatedAt: serverTimestamp()
+    titleCiphertext: ciphertext,
+    titleIv: iv,
+    updatedAt: serverTimestamp()
   });
 }
 
@@ -291,5 +313,6 @@ export {
   listenMessages, addMessage, bumpUpdatedAt, incrementExchanges,
   setConversationTitle, softDeleteConversation, setConversationFolder,
   registerWithEmail, loginWithEmail,
-  markCourtesyUsed
+  markCourtesyUsed,
+  encryptTitle, decryptTitle
 };
