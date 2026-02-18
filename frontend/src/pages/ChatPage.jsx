@@ -15,7 +15,9 @@ import {
   listenMessages,
   addMessage,
   bumpUpdatedAt,
-  setConversationTitle
+  setConversationTitle,
+  getDecryptedSummary,
+  saveEncryptedSummary
 } from "../firebase"
 import LoginForm from "../components/LoginForm"
 import EmailVerifyBanner from "../components/EmailVerifyBanner"
@@ -383,8 +385,8 @@ export default function ChatPage() {
       if (result.ok) {
         setMsgs(prev => [...prev, { id: Date.now() + 1, role: 'assistant', content: result.content }]);
         
-        // ✅ NEW: Trigger summarizer
-       fetch(`${CHAT_URL}/summarize-demo`, {
+        // Demo summarizer — no encryption needed (no Firestore)
+        fetch(`${CHAT_URL}/summarize-demo`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -451,30 +453,42 @@ async function send() {
       return
     }
 
-    const aiResponse = result.content || result.reply || ''  // ← FIX: Handle both
-    
+    const aiResponse = result.content || result.reply || ''
+
     await addMessage(uid, cid, "assistant", aiResponse)
     await bumpUpdatedAt(uid, cid)
-    
-    // ✅ Fixed summarizer call
-    if (aiResponse) {  // ← Only call if we have a response
-      fetch(`${CHAT_URL}/summarize`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          userId: uid,
-          conversationId: cid,
-          conversationTurn: {
-            userMessage: content,
-            aiResponse: aiResponse  // ← Use the variable
+
+    // ✅ Encrypted summary flow: frontend reads, Lambda generates, frontend encrypts & stores
+    if (aiResponse) {
+      (async () => {
+        try {
+          const previousSummary = await getDecryptedSummary(uid, cid)
+          const res = await fetch(`${CHAT_URL}/summarize`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              userId: uid,
+              conversationId: cid,
+              previousSummary,
+              conversationTurn: {
+                userMessage: content,
+                aiResponse
+              }
+            })
+          })
+          if (res.ok) {
+            const { summary } = await res.json()
+            if (summary) await saveEncryptedSummary(uid, cid, summary)
           }
-        })
-      }).catch(err => console.error('Summarizer failed:', err));
+        } catch (err) {
+          console.error('Summarizer failed:', err)
+        }
+      })()
     }
-    
+
     if (!quota.unlimited) await safeIncrementUsage(uid)
   } catch (err) {
     if (String(err?.message || "").toLowerCase() !== "login required") console.error(err)

@@ -304,6 +304,30 @@ async function setConversationFolder(uid, cid, folder) {
   });
 }
 
+// ---- Summary helpers (encrypted at rest) ----
+async function getDecryptedSummary(uid, cid) {
+  const ref = doc(db, 'users', uid, 'conversations', cid, 'memory', 'summary');
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return '';
+  const { ciphertext, iv } = snap.data();
+  if (!ciphertext || !iv) return '';
+  try {
+    return await decryptForUser(uid, ciphertext, iv);
+  } catch {
+    return '';
+  }
+}
+
+async function saveEncryptedSummary(uid, cid, summaryText) {
+  const { ciphertext, iv } = await encryptForUser(uid, summaryText);
+  const ref = doc(db, 'users', uid, 'conversations', cid, 'memory', 'summary');
+  await setDoc(ref, {
+    ciphertext,
+    iv,
+    lastUpdated: serverTimestamp()
+  }, { merge: true });
+}
+
 export {
   app, auth, googleProvider, signInWithPopup, signOut, onIdTokenChanged,
   db,
@@ -314,5 +338,6 @@ export {
   setConversationTitle, softDeleteConversation, setConversationFolder,
   registerWithEmail, loginWithEmail,
   markCourtesyUsed,
-  encryptTitle, decryptTitle
+  encryptTitle, decryptTitle,
+  getDecryptedSummary, saveEncryptedSummary
 };
