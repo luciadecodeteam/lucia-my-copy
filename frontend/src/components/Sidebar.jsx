@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react'
-import { emitQuickPrompt } from '../lib/bus'
 import { useAuthToken } from '../hooks/useAuthToken'
 import {
   auth,
@@ -48,11 +47,6 @@ export default function Sidebar({ open, onClose }) {
   const [openKebabFor, setOpenKebabFor] = useState(null)
   const kebabRef = useRef(null)
 
-  // Clean ASCII (no smart quotes)
-  const firstPrompt = "I don't even know what I've gotten myself into. Give me light on this."
-  const chips = [firstPrompt, 'Summarize', 'Explain', 'Improve tone', 'List steps', 'Generate plan']
-  const clickChip = (text) => { emitQuickPrompt(text); onClose?.() }
-
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'User'
   const email = user?.email || ''
   const currentCid = new URLSearchParams(window.location.search).get('c') || null
@@ -66,52 +60,51 @@ export default function Sidebar({ open, onClose }) {
     return () => window.removeEventListener('click', onClick)
   }, [])
 
-useEffect(() => {
-  if (!user?.uid) return
-  setConvos([])
-  setLoadingConvos(true)
+  useEffect(() => {
+    if (!user?.uid) return
+    setConvos([])
+    setLoadingConvos(true)
 
-  const q = query(
-    collection(db, 'users', user.uid, 'conversations'),
-    orderBy('updatedAt', 'desc')
-  )
-  const unsub = onSnapshot(q, async (snap) => {
-    const rows = await Promise.all(snap.docs.map(async (d) => {
-      const data = d.data();
+    const q = query(
+      collection(db, 'users', user.uid, 'conversations'),
+      orderBy('updatedAt', 'desc')
+    )
+    const unsub = onSnapshot(q, async (snap) => {
+      const rows = await Promise.all(snap.docs.map(async (d) => {
+        const data = d.data();
+        
+        let title = data.title || 'Untitled';
+        if (data.titleCiphertext && data.titleIv) {
+          const { decryptTitle } = await import('../firebase');
+          title = await decryptTitle(user.uid, data.titleCiphertext, data.titleIv);
+        }
+        
+        return { 
+          id: d.id, 
+          title,
+          folder: data.folder,
+          updatedAt: data.updatedAt,
+          createdAt: data.createdAt,
+          deletedAt: data.deletedAt
+        };
+      }));
       
-      // Decrypt title
-      let title = data.title || 'Untitled'; // Legacy plaintext fallback
-      if (data.titleCiphertext && data.titleIv) {
-        const { decryptTitle } = await import('../firebase');
-        title = await decryptTitle(user.uid, data.titleCiphertext, data.titleIv);
-      }
-      
-      return { 
-        id: d.id, 
-        title,
-        folder: data.folder,
-        updatedAt: data.updatedAt,
-        createdAt: data.createdAt,
-        deletedAt: data.deletedAt
-      };
-    }));
-    
-    const list = rows.filter(c => {
-      const tNew = (c.title || '').toLowerCase() === 'new chat'
-      const upd = c.updatedAt?.toMillis?.() ?? 0
-      const crt = c.createdAt?.toMillis?.() ?? 0
-      const deleted = Boolean(c.deletedAt)
-      return (!tNew || upd > crt) && !deleted
-    })
-    setConvos(prev => {
-      const optimistic = prev.filter(x => x.__optimistic && !list.find(y => y.id === x.id))
-      return [...optimistic, ...list]
-    })
-    setLoadingConvos(false)
-  }, () => setLoadingConvos(false))
+      const list = rows.filter(c => {
+        const tNew = (c.title || '').toLowerCase() === 'new chat'
+        const upd = c.updatedAt?.toMillis?.() ?? 0
+        const crt = c.createdAt?.toMillis?.() ?? 0
+        const deleted = Boolean(c.deletedAt)
+        return (!tNew || upd > crt) && !deleted
+      })
+      setConvos(prev => {
+        const optimistic = prev.filter(x => x.__optimistic && !list.find(y => y.id === x.id))
+        return [...optimistic, ...list]
+      })
+      setLoadingConvos(false)
+    }, () => setLoadingConvos(false))
 
-  return () => unsub()
-}, [user?.uid])
+    return () => unsub()
+  }, [user?.uid])
 
   const folders = useMemo(() => {
     const s = new Set()
@@ -161,7 +154,6 @@ useEffect(() => {
     setOpenKebabFor(null)
   }
 
-  // Rename / folder modals
   function openRenameModal(cid, currentTitle) {
     setOpenKebabFor(null)
     setRenameFor({ cid, currentTitle })
@@ -192,7 +184,6 @@ useEffect(() => {
     setNewFolderFor(null)
   }
 
-  // Navigate to footer pages (Terms / Privacy / Pricing)
   function navigateToPage(page) {
     setMenuOpen(false)
     const url = new URL(window.location.href)
@@ -204,7 +195,6 @@ useEffect(() => {
 
   const openLoginModal = () => window.dispatchEvent(new CustomEvent('lucia:show-login'))
 
-  // Small inline SVGs
   const Ellipsis = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
       <circle cx="5" cy="12" r="2" fill="currentColor" />
@@ -230,12 +220,8 @@ useEffect(() => {
             ))}
           </div>
 
-          <h4 style={{ marginTop: 16 }}>Quick Prompts</h4>
-          <div className="chips-wrap">
+          <div className="chips-wrap" style={{ marginTop: 16 }}>
             <span className="chip" onClick={handleNewChat}>+ New chat</span>
-            {chips.map((c) => (
-              <span key={c} className="chip" onClick={() => clickChip(c)}>{c}</span>
-            ))}
           </div>
 
           <h4 style={{ marginTop: 16 }}>Slots</h4>
@@ -320,7 +306,6 @@ useEffect(() => {
                   <button className="user-menu-item" onClick={(e) => { e.stopPropagation(); navigateToPage('privacy') }}>
                     Privacy Policy
                   </button>
-                  {/* New: Pricing next to Terms/Privacy */}
                   <button className="user-menu-item" onClick={(e) => { e.stopPropagation(); navigateToPage('pricing') }}>
                     Pricing & Plans
                   </button>

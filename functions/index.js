@@ -12,9 +12,9 @@ const REGION = process.env.FUNCTIONS_REGION || "europe-west3";
 const MAIL_COLLECTION = process.env.MAIL_COLLECTION || "mail";
 
 const BRAND = {
-  from: "Lucía <hello@luciadecode.com>",
+  from: "L.U.C.I.A. <hello@luciadecode.com>",
   replyTo: "lucia.decode@proton.me",
-  appName: "Lucía",
+  appName: "L.U.C.I.A.",
   continueUrl: process.env.APP_CONTINUE_URL || "https://app.luciadecode.com",
   helpUrl: "https://luciadecode.com",
   supportEmail: "lucia.decode@proton.me",
@@ -53,7 +53,7 @@ function renderEmail({ displayName, hasVerificationLink, verifyUrl }) {
         <p style="margin:18px 0">
           <a class="btn" href="${verifyUrl}">Confirm Account</a>
         </p>
-        <p class="muted">This link expires after a short time. If it’s expired, sign in and request a new one.</p>
+        <p class="muted">This link expires after a short time. If it's expired, sign in and request a new one.</p>
       </div>`
     : `
       <div class="card">
@@ -81,15 +81,15 @@ function renderEmail({ displayName, hasVerificationLink, verifyUrl }) {
     <div style="padding:0 28px">
       <p><strong>Privacy you can trust:</strong> All your conversations are encrypted before leaving your device. We cannot read them. Only you control your content.</p>
       <p>${escapeHtml(BRAND.appName)} helps you find context and perspective through what we call <em>Digital Intuition</em>. She sometimes infers a lot from very little — designed to see patterns you might not be consciously aware of.</p>
-      <p>There’s also a random, statistical component to her reasoning. Sometimes it feels magical when she nails it; other times she may add a little noise. The underlying AI never gives the same answer twice — that’s why we say: she’s context, not absolute truth.</p>
-      <p>Think of her like GPS: she guides you, but you remain the driver. You don’t drive off a cliff just because the map says the road continues, and you don’t enter a path too narrow for cars only because it looks shorter. You always keep your own judgment.</p>
+      <p>There's also a random, statistical component to her reasoning. Sometimes it feels magical when she nails it; other times she may add a little noise. The underlying AI never gives the same answer twice — that's why we say: she's context, not absolute truth.</p>
+      <p>Think of her like GPS: she guides you, but you remain the driver. You don't drive off a cliff just because the map says the road continues, and you don't enter a path too narrow for cars only because it looks shorter. You always keep your own judgment.</p>
       <div class="card">
-        <p><strong>Your rights:</strong> You can request deletion of your email and account data at any time. Write to <a href="mailto:${BRAND.supportEmail}">${BRAND.supportEmail}</a> and we’ll remove it.</p>
+        <p><strong>Your rights:</strong> You can request deletion of your email and account data at any time. Write to <a href="mailto:${BRAND.supportEmail}">${BRAND.supportEmail}</a> and we'll remove it.</p>
       </div>
       ${billingBlock}
     </div>
     <div style="padding:0 28px 8px"><p class="muted">Need help? Email <a href="mailto:${BRAND.supportEmail}">${BRAND.supportEmail}</a> or visit <a href="${BRAND.helpUrl}">${BRAND.helpUrl}</a>.</p></div>
-    <div class="footer"><p class="muted">Sent by ${escapeHtml(BRAND.appName)}. If this wasn’t you, you can ignore this message.</p></div>
+    <div class="footer"><p class="muted">Sent by ${escapeHtml(BRAND.appName)}. If this wasn't you, you can ignore this message.</p></div>
   </div>
   <style>${styles}</style>`;
 }
@@ -97,7 +97,7 @@ function renderEmail({ displayName, hasVerificationLink, verifyUrl }) {
 function renderText({ hasVerificationLink, verifyUrl }) {
   const lines = [];
   lines.push(
-    "Subject: Welcome to Lucía – Your Conversations Are Private",
+    "Subject: Welcome to L.U.C.I.A. – Your Conversations Are Private",
     "",
     "Hi,",
     ""
@@ -110,7 +110,7 @@ function renderText({ hasVerificationLink, verifyUrl }) {
   lines.push(
     "Privacy you can trust: Your conversations are encrypted before leaving your device. We cannot read them. Only you control your content.",
     "",
-    "Lucía gives context through Digital Intuition — she sometimes infers a lot from very little, with a random component that can feel magical at times (and off at others). The underlying AI never gives the same answer twice. She is context, not absolute truth.",
+    "L.U.C.I.A. gives context through Digital Intuition — she sometimes infers a lot from very little, with a random component that can feel magical at times (and off at others). The underlying AI never gives the same answer twice. She is context, not absolute truth.",
     "",
     "Think of her like GPS: she guides you, but you remain the driver.",
     "",
@@ -142,7 +142,7 @@ export const sendWelcomeOnSignup = functions
         verifyUrl = await auth.generateEmailVerificationLink(email, actionCodeSettings);
       }
 
-      const subject = "Welcome to Lucía – Your Conversations Are Private";
+      const subject = "Welcome to L.U.C.I.A. – Your Conversations Are Private";
       const html = renderEmail({ displayName, hasVerificationLink: !!verifyUrl, verifyUrl });
       const text = renderText({ hasVerificationLink: !!verifyUrl, verifyUrl });
 
