@@ -222,53 +222,23 @@ async function bumpUpdatedAt(uid, cid) {
   });
 }
 
-// Free 10 + courtesy +2
 async function incrementExchanges(uid) {
   const ref = doc(db, 'users', uid);
   const snap = await getDoc(ref);
   if (!snap.exists()) return;
 
   const data = snap.data();
-  const update = { updatedAt: serverTimestamp() };
   const limits = resolveUsageLimits(data);
-  const used = coerceNumber(data.exchanges_used) ?? 0;
 
-  if (limits.unlimited) {
-    update.exchanges_used = increment(1);
-    await updateDoc(ref, update);
-    return;
+  // Only unlimited tiers can increment
+  if (!limits.unlimited) {
+    throw new Error('Free tier has no message allowance');
   }
 
-  const base = Number.isFinite(limits.baseAllowance) ? limits.baseAllowance : null;
-  const courtesyCap = Number.isFinite(limits.courtesyAllowance) ? limits.courtesyAllowance : null;
-  const hasCourtesy = Number.isFinite(base) && Number.isFinite(courtesyCap) && courtesyCap > base;
-  const courtesyUsed = hasCourtesy ? limits.courtesyUsed : false;
-
-  if (!Number.isFinite(base)) return;
-
-  if (!hasCourtesy) {
-    if (used >= base) return;
-    update.exchanges_used = increment(1);
-    await updateDoc(ref, update);
-    return;
-  }
-
-  if (!courtesyUsed) {
-    if (used < base) {
-      update.exchanges_used = increment(1);
-    } else if (used === base) {
-      update.exchanges_used = base + 1;
-      update.courtesy_used = true;
-    } else {
-      return;
-    }
-  } else if (used < courtesyCap) {
-    update.exchanges_used = increment(1);
-  } else {
-    return;
-  }
-
-  await updateDoc(ref, update);
+  await updateDoc(ref, { 
+    exchanges_used: increment(1),
+    updatedAt: serverTimestamp()
+  });
 }
 
 // ---- NEW: courtesy flag helper (admin / debug) ----

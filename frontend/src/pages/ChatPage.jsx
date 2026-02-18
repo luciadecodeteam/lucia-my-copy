@@ -105,44 +105,11 @@ async function safeIncrementUsage(uid) {
     const cur = snap.data() || {}
     const limits = resolveUsageLimits(cur)
     const used = coerceNumber(cur.exchanges_used) ?? 0
-
-    if (limits.unlimited) {
-      tx.update(ref, { exchanges_used: used + 1 })
-      return
+    // Only unlimited tiers can send messages
+    if (!limits.unlimited) {
+      throw new Error("Upgrade required to send messages")
     }
-
-    const base = limits.baseAllowance
-    const courtesyCap = limits.courtesyAllowance
-    const hasCourtesy = Number.isFinite(courtesyCap) && Number.isFinite(base) && courtesyCap > base
-    const courtesyUsed = hasCourtesy ? limits.courtesyUsed : false
-
-    if (!Number.isFinite(base)) {
-      throw new Error("Usage limit misconfigured")
-    }
-
-    if (!hasCourtesy) {
-      if (used >= base) {
-        throw new Error("Message allowance exhausted")
-      }
-      tx.update(ref, { exchanges_used: used + 1 })
-      return
-    }
-
-    if (!courtesyUsed) {
-      if (used < base) {
-        tx.update(ref, { exchanges_used: used + 1 })
-        return
-      }
-      if (used === base) {
-        tx.update(ref, { exchanges_used: base + 1, courtesy_used: true })
-        return
-      }
-    } else if (used < courtesyCap) {
-      tx.update(ref, { exchanges_used: used + 1 })
-      return
-    }
-
-    throw new Error("Free limit reached")
+    tx.update(ref, { exchanges_used: used + 1 })
   })
 }
 

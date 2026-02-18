@@ -130,9 +130,9 @@ export function resolveUsageLimits(profile) {
 
   return {
     unlimited: false,
-    baseAllowance: 10,
-    courtesyAllowance: 12,
-    courtesyUsed,
+    baseAllowance: 0,
+    courtesyAllowance: null,
+    courtesyUsed: false,
     messageAllowance: null,
   };
 }
