@@ -62,16 +62,16 @@ function renderEmail({ displayName, hasVerificationLink, verifyUrl }) {
 
   const billingBlock = `
     <div class="card">
-      <p><strong>Billing statement:</strong> If you upgrade mid-month, the new plan starts right away with the full number of messages. Your billing date switches to that day (e.g., upgrade on the 18th → renew on the 18th next month). The previous plan is treated as fully used—no proration or refunds—and your conversation history stays intact.</p>
+      <p><strong>Billing statement:</strong> If you upgrade mid-month, the new plan starts right away with the full number of messages. Your billing date switches to that day (e.g., upgrade on the 18th &rarr; renew on the 18th next month). The previous plan is treated as fully used - no proration or refunds - and your conversation history stays intact.</p>
       <p>Full details: see our Terms of Service.</p>
-      <p class="muted">Example: Basic on the 1st → upgrade to Medium on the 18th; Medium starts on the 18th with full messages; next renewal is the 18th next month.</p>
+      <p class="muted">Example: Basic on the 1st &rarr; upgrade to Medium on the 18th; Medium starts on the 18th with full messages; next renewal is the 18th next month.</p>
     </div>`;
 
   return `
   <div class="container">
     <div class="header">
       <div class="brand">${escapeHtml(BRAND.appName)}</div>
-      <h2>Welcome — Your Conversations Are Private</h2>
+      <h2>Welcome - Your Conversations Are Private</h2>
     </div>
     <div style="padding:0 28px 12px">
       <p>${greeting}</p>
@@ -80,8 +80,8 @@ function renderEmail({ displayName, hasVerificationLink, verifyUrl }) {
     ${confirmBlock}
     <div style="padding:0 28px">
       <p><strong>Privacy you can trust:</strong> All your conversations are encrypted before leaving your device. We cannot read them. Only you control your content.</p>
-      <p>${escapeHtml(BRAND.appName)} helps you find context and perspective through what we call <em>Digital Intuition</em>. She sometimes infers a lot from very little — designed to see patterns you might not be consciously aware of.</p>
-      <p>There's also a random, statistical component to her reasoning. Sometimes it feels magical when she nails it; other times she may add a little noise. The underlying AI never gives the same answer twice — that's why we say: she's context, not absolute truth.</p>
+      <p>${escapeHtml(BRAND.appName)} helps you find context and perspective through what we call <em>Digital Intuition</em>. She sometimes infers a lot from very little - designed to see patterns you might not be consciously aware of.</p>
+      <p>There's also a random, statistical component to her reasoning. Sometimes it feels magical when she nails it; other times she may add a little noise. The underlying AI never gives the same answer twice - that's why we say: she's context, not absolute truth.</p>
       <p>Think of her like GPS: she guides you, but you remain the driver. You don't drive off a cliff just because the map says the road continues, and you don't enter a path too narrow for cars only because it looks shorter. You always keep your own judgment.</p>
       <div class="card">
         <p><strong>Your rights:</strong> You can request deletion of your email and account data at any time. Write to <a href="mailto:${BRAND.supportEmail}">${BRAND.supportEmail}</a> and we'll remove it.</p>
@@ -97,7 +97,7 @@ function renderEmail({ displayName, hasVerificationLink, verifyUrl }) {
 function renderText({ hasVerificationLink, verifyUrl }) {
   const lines = [];
   lines.push(
-    "Subject: Welcome to L.U.C.I.A. – Your Conversations Are Private",
+    "Subject: Welcome to L.U.C.I.A. - Your Conversations Are Private",
     "",
     "Hi,",
     ""
@@ -110,11 +110,11 @@ function renderText({ hasVerificationLink, verifyUrl }) {
   lines.push(
     "Privacy you can trust: Your conversations are encrypted before leaving your device. We cannot read them. Only you control your content.",
     "",
-    "L.U.C.I.A. gives context through Digital Intuition — she sometimes infers a lot from very little, with a random component that can feel magical at times (and off at others). The underlying AI never gives the same answer twice. She is context, not absolute truth.",
+    "L.U.C.I.A. gives context through Digital Intuition - she sometimes infers a lot from very little, with a random component that can feel magical at times (and off at others). The underlying AI never gives the same answer twice. She is context, not absolute truth.",
     "",
     "Think of her like GPS: she guides you, but you remain the driver.",
     "",
-    "If you upgrade mid-month, the new plan starts immediately with full messages. Your billing date changes to that day (e.g., upgrade on the 18th → renew on the 18th next month). No proration/refund for the previous plan. Threads are preserved.",
+    "If you upgrade mid-month, the new plan starts immediately with full messages. Your billing date changes to that day (e.g., upgrade on the 18th -> renew on the 18th next month). No proration/refund for the previous plan. Threads are preserved.",
     "",
     `You can request deletion of your email and account data anytime by writing to ${BRAND.supportEmail}.`,
     "",
@@ -142,7 +142,7 @@ export const sendWelcomeOnSignup = functions
         verifyUrl = await auth.generateEmailVerificationLink(email, actionCodeSettings);
       }
 
-      const subject = "Welcome to L.U.C.I.A. – Your Conversations Are Private";
+      const subject = "Welcome to L.U.C.I.A. - Your Conversations Are Private";
       const html = renderEmail({ displayName, hasVerificationLink: !!verifyUrl, verifyUrl });
       const text = renderText({ hasVerificationLink: !!verifyUrl, verifyUrl });
 
