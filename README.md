@@ -26,13 +26,15 @@ npm start
 cd lucia-my-copy-main
 
 git add .
-git commit -m "changed strat"
+git commit -m "Mail verification changes"
 git push -u origin main --force
 
 git cherry-pick 5745cdf1f6155bd08713e111bea02ebd55973448
 
 
-
+cd frontend  # or client folder
+npm install  # if you haven't already
+npm run dev  
 
 
 git init
