@@ -71,7 +71,7 @@ export default function MessageBubble({ role = 'assistant', content, children })
 
   return (
     <div className={`bubble ${isUser ? 'user' : 'assistant'}`}>
-      <div className="role">{isUser ? 'You' : 'Lucía'}</div>
+      <div className="role">{isUser ? 'You' : 'L.U.C.I.A.'}</div>
 
       <div className="md">
         {hasReactChildren ? (

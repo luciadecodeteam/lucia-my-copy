@@ -3,3 +3,7 @@ dist
 .vercel
 .next
 .DS_Store
+node_modules/
+infra/aws/lucia-summarizer-function/node_modules/
+.node_modules
+.functions

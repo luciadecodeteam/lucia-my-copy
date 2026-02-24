@@ -12,9 +12,9 @@ const REGION = process.env.FUNCTIONS_REGION || "europe-west3";
 const MAIL_COLLECTION = process.env.MAIL_COLLECTION || "mail";
 
 const BRAND = {
-  from: "Lucía <hello@luciadecode.com>",
+  from: "L.U.C.I.A <hello@luciadecode.com>",
   replyTo: "lucia.decode@proton.me",
-  appName: "Lucía",
+  appName: "L.U.C.I.A",
   continueUrl: process.env.APP_CONTINUE_URL || "https://app.luciadecode.com",
   helpUrl: "https://luciadecode.com",
   supportEmail: "lucia.decode@proton.me",
@@ -97,7 +97,7 @@ function renderEmail({ displayName, hasVerificationLink, verifyUrl }) {
 function renderText({ hasVerificationLink, verifyUrl }) {
   const lines = [];
   lines.push(
-    "Subject: Welcome to Lucía – Your Conversations Are Private",
+    "Subject: Welcome to L.U.C.I.A – Your Conversations Are Private",
     "",
     "Hi,",
     ""
@@ -110,7 +110,7 @@ function renderText({ hasVerificationLink, verifyUrl }) {
   lines.push(
     "Privacy you can trust: Your conversations are encrypted before leaving your device. We cannot read them. Only you control your content.",
     "",
-    "Lucía gives context through Digital Intuition — she sometimes infers a lot from very little, with a random component that can feel magical at times (and off at others). The underlying AI never gives the same answer twice. She is context, not absolute truth.",
+    "L.U.C.I.A gives context through Digital Intuition — she sometimes infers a lot from very little, with a random component that can feel magical at times (and off at others). The underlying AI never gives the same answer twice. She is context, not absolute truth.",
     "",
     "Think of her like GPS: she guides you, but you remain the driver.",
     "",
@@ -142,7 +142,7 @@ export const sendWelcomeOnSignup = functions
         verifyUrl = await auth.generateEmailVerificationLink(email, actionCodeSettings);
       }
 
-      const subject = "Welcome to Lucía – Your Conversations Are Private";
+      const subject = "Welcome to L.U.C.I.A – Your Conversations Are Private";
       const html = renderEmail({ displayName, hasVerificationLink: !!verifyUrl, verifyUrl });
       const text = renderText({ hasVerificationLink: !!verifyUrl, verifyUrl });
 

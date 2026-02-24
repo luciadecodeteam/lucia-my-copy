@@ -13,8 +13,8 @@ function AppShell({ children }) {
       <header className="header">
         <button className="btn sidebar-toggle" onClick={() => setOpen(s => !s)}>☰</button>
         <div className="brand">
-          <img src="/images/lucia-logo.svg" alt="Lucía" />
-        <div className="brand-title">LUCIA <span className="dot"/></div>
+          <img src="/images/lucia-logo.svg" alt="L.U.C.I.A." />
+        <div className="brand-title">L.U.C.I.A. <span className="dot"/></div>
         </div>
         <div className="header-actions">{/* intentionally empty */}</div>
       </header>

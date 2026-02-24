@@ -45,7 +45,7 @@ export function CheckoutSuccess() {
       )}
       cta={(
         <>
-          <a href="/" aria-label="Go back to Lucía">Go to Lucía</a>
+          <a href="/" aria-label="Go back to Lucía">Go to L.U.C.I.A.</a>
           <a className="secondary" href="mailto:lucia.decode@proton.me">Need help?</a>
         </>
       )}
@@ -60,7 +60,7 @@ export function CheckoutCancel() {
       message={<p>No worries — your card was not charged. You can resume the checkout whenever you’re ready.</p>}
       cta={(
         <>
-          <a href="/" aria-label="Return to Lucía">Back to Lucía</a>
+          <a href="/" aria-label="Return to Lucía">Back to L.U.C.I.A.</a>
           <a className="secondary" href="mailto:lucia.decode@proton.me">Contact support</a>
         </>
       )}

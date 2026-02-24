@@ -164,7 +164,7 @@ export default function FiscalGate({ onDone }) {
           <div className="login-overlay" role="dialog" aria-modal="true">
             <div className="login-modal">
               <h3 style={{marginTop:0}}>We’re not available in Spain</h3>
-              <p>Lucía is not offered in Spain at this time. You can browse our info pages, but you can’t create an account.</p>
+              <p>L.U.C.I.A. is not offered in Spain at this time. You can browse our info pages, but you can’t create an account.</p>
               <div style={{display:"flex", gap:8}}>
                 <button onClick={()=>setShowESBlock(false)}>Back</button>
                 <button onClick={()=>{ /* optional: sign out */ auth.signOut(); }}>

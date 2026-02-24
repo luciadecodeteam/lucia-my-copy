@@ -491,7 +491,7 @@ async function send() {
         <div className="limit-banner" role="alert">
           <div>
             <div className="title">Free messages finished</div>
-            <div className="desc">Upgrade to keep chatting with Lucía.</div>
+            <div className="desc">Upgrade to keep chatting with L.U.C.I.A..</div>
           </div>
           <button className="act" type="button" disabled>Upgrade</button>
         </div>
