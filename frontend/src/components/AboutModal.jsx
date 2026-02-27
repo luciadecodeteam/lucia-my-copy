@@ -44,7 +44,7 @@ export default function AboutModal({ open, onClose }) {
             <div className="about-text-content">
               <h3>What you actually get (no magic)</h3>
               <ul>
-                <li>Lucia helps you see whether what you want is possible or not — and why.</li>
+                <li>L.U.C.I.A helps you see whether what you want is possible or not — and why.</li>
                 <li>If it is, she shows what improves your chances; if it isn't, how to reduce losses.</li>
                 <li>She doesn't predict the future or offer absolute truth — she gives clear, usable context.</li>
               </ul>
