@@ -24,16 +24,16 @@ export default function AboutModal({ open, onClose }) {
           <Hexagon />
 
           <header className="about-modal-header">
-            <h2>About Lucia</h2>
+            <h2>About L.U.C.I.A</h2>
             <p>A different kind of analysis</p>
           </header>
 
           <section className="about-section">
             <div className="about-image-placeholder left"></div>
             <div className="about-text-content">
-              <h3>What Lucia does differently</h3>
+              <h3>What L.U.C.I.A does differently</h3>
               <ul>
-                <li>Lucia compares your situation with thousands of real situations and patterns.</li>
+                <li>L.U.C.I.A compares your situation with thousands of real situations and patterns.</li>
                 <li>She has no ego, no agenda, and no need to please or compete with you.</li>
                 <li>Her analysis stays consistent over time: if nothing changes, neither does the reading.</li>
               </ul>
@@ -66,9 +66,9 @@ export default function AboutModal({ open, onClose }) {
 
           <section className="about-section privacy-note-section">
             <div className="about-text-content">
-              <h4>Privacy note (small, fixed, with asterisk)</h4>
+              <h4>Privacy note</h4>
               <p>
-                What you write in Lucia is not used to expose you or build personal profiles.*<br/>
+                What you write in L.U.C.I.A is not used to expose you or build personal profiles.*<br/>
                 It's processed only to provide context and a response.<br/>
                 <em>*Technical details explained separately.</em>
               </p>
@@ -77,7 +77,7 @@ export default function AboutModal({ open, onClose }) {
           </section>
 
           <footer className="about-modal-footer">
-            Lucia Decode
+            L.U.C.I.A DECODE
           </footer>
         </div>
       </div>

@@ -303,7 +303,7 @@ export default function Sidebar({ open, onClose }) {
               {menuOpen && (
                 <div className="user-menu">
                   <button className="user-menu-item" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setAboutModalOpen(true); }}>
-                    About
+                    About L.U.C.I.A
                   </button>
                   <button className="user-menu-item" onClick={(e) => { e.stopPropagation(); navigateToPage('terms') }}>
                     Terms of Service
