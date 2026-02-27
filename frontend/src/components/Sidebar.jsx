@@ -9,6 +9,7 @@ import {
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore'
 import '../styles/slots.css'
 import '../styles/sidebar.css'
+import AboutModal from './AboutModal'
 
 function InlineModal({ title, value, setValue, onCancel, onSave, placeholder, okLabel = "OK" }) {
   function onKey(e) {
@@ -40,6 +41,7 @@ function InlineModal({ title, value, setValue, onCancel, onSave, placeholder, ok
 export default function Sidebar({ open, onClose }) {
   const { user } = useAuthToken()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [isAboutModalOpen, setAboutModalOpen] = useState(false)
   const [convos, setConvos] = useState([])
   const [loadingConvos, setLoadingConvos] = useState(false)
 
@@ -300,6 +302,9 @@ export default function Sidebar({ open, onClose }) {
 
               {menuOpen && (
                 <div className="user-menu">
+                  <button className="user-menu-item" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setAboutModalOpen(true); }}>
+                    About
+                  </button>
                   <button className="user-menu-item" onClick={(e) => { e.stopPropagation(); navigateToPage('terms') }}>
                     Terms of Service
                   </button>
@@ -324,6 +329,7 @@ export default function Sidebar({ open, onClose }) {
       </div>
 
       {/* Modals */}
+      <AboutModal open={isAboutModalOpen} onClose={() => setAboutModalOpen(false)} />
       {renameFor && (
         <InlineModal
           title="Rename chat"
