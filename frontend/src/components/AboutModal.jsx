@@ -29,7 +29,7 @@ export default function AboutModal({ open, onClose }) {
           </header>
 
           <section className="about-section">
-            <div className="about-image-placeholder left"></div>
+            <img src="/images/Image 1.png" alt="Abstract representation of situational patterns" className="about-image left" />
             <div className="about-text-content">
               <h3>What L.U.C.I.A does differently</h3>
               <ul>
@@ -49,11 +49,11 @@ export default function AboutModal({ open, onClose }) {
                 <li>She doesn't predict the future or offer absolute truth — she gives clear, usable context.</li>
               </ul>
             </div>
-            <div className="about-image-placeholder right"></div>
+            <img src="/images/Image 2.png" alt="Visual metaphor for gaining clarity and context" className="about-image right" />
           </section>
 
           <section className="about-section">
-            <div className="about-image-placeholder left"></div>
+            <img src="/images/Image 3.png" alt="Illustration of incomplete information and projection" className="about-image left" />
             <div className="about-text-content">
               <h3>Why things don't add up</h3>
               <ul>
@@ -73,7 +73,7 @@ export default function AboutModal({ open, onClose }) {
                 <em>*Technical details explained separately.</em>
               </p>
             </div>
-             <div className="about-image-placeholder right"></div>
+             <img src="/images/Image 4.png" alt="Symbol of digital privacy and data protection" className="about-image right" />
           </section>
 
           <footer className="about-modal-footer">
