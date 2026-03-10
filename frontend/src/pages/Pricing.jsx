@@ -6,8 +6,8 @@ import { db } from '../firebase';
 import '../styles/pricing.css';
 
 const PLANS = [
-  { key: 'WEEKLY',  tier: 'weekly',  name: 'Weekly',  price: '€9.99',  note: 'Unlimited messages', priceId: import.meta.env.VITE_STRIPE_PRICE_WEEKLY || 'price_1St7fI2NCNcgXLO11a8SiV4f' },
-  { key: 'MONTHLY', tier: 'monthly', name: 'Monthly', price: '€19.99', note: 'Unlimited messages', priceId: import.meta.env.VITE_STRIPE_PRICE_MONTHLY || 'price_1St7no2NCNcgXLO1cn0oJQpj' },
+  { key: 'WEEKLY',  tier: 'weekly',  name: 'Weekly',  price: '€14.99',  note: 'Unlimited messages', priceId: import.meta.env.VITE_STRIPE_PRICE_WEEKLY || 'price_1T89VX2NCNcgXLO1oMjkSLpj' },
+  { key: 'MONTHLY', tier: 'monthly', name: 'Monthly', price: '€29.99', note: 'Unlimited messages', priceId: import.meta.env.VITE_STRIPE_PRICE_MONTHLY || 'price_1T89pl2NCNcgXLO1DWIGmlcR' },
 ];
 
 export default function Pricing({ onClose }) {
