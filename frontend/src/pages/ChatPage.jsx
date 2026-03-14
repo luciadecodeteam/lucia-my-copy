@@ -1,5 +1,5 @@
 // lucia-secure/frontend/src/pages/ChatPage.jsx
-import React, { useState, useEffect, useMemo } from "react"
+import React, { useState, useEffect, useMemo, useRef } from "react"
 import MessageBubble from "../components/MessageBubble"
 import Composer from "../components/Composer"
 import CourtesyPopup from "../components/CourtesyPopup"
@@ -128,6 +128,13 @@ export default function ChatPage() {
   const [conversationId, setConversationId] = useState(() => new URLSearchParams(window.location.search).get("c") || null)
   const [isDemoMode] = useState(() => new URLSearchParams(window.location.search).get("demo") === "true");
   const [demoSessionId, setDemoSessionId] = useState(() => sessionStorage.getItem('demoSessionId') || null);
+
+  const bottomRef = useRef(null)
+
+  // Auto-scroll logic
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [msgs, busy])
 
   // NEW: Legal overlay state
   const getPageFromURL = () => {
@@ -518,6 +525,7 @@ async function send() {
             )}
           </>
         )}
+        <div ref={bottomRef} />
       </div>
 
       <Composer value={text} setValue={setText} onSend={isDemoMode ? sendDemoMessage : send} onCancel={cancel} busy={busy} />
