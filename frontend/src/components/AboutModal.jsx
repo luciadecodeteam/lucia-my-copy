@@ -76,6 +76,15 @@ export default function AboutModal({ open, onClose }) {
              <img src="/images/Image 4.png" alt="Symbol of digital privacy and data protection" className="about-image right" />
           </section>
 
+          <section className="about-section legal-disclaimer-section">
+            <div className="about-text-content">
+              <h4>Important Disclaimers</h4>
+              <p>
+                L.U.C.I.A. is currently in her initial launch phase. Please note that during this phase, L.U.C.I.A. is not available to users in the EU. Additionally, because our system relies on underlying AI models, if the current model is deprecated or reaches end-of-support, we may temporarily suspend service until a replacement is integrated. Should the operational costs of these underlying services increase substantially, subscription pricing may be adjusted accordingly to maintain the platform.
+              </p>
+            </div>
+          </section>
+
           <footer className="about-modal-footer">
             L.U.C.I.A DECODE
           </footer>
