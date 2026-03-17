@@ -10,7 +10,7 @@ export default function VideoModal({ open, onClose, title, videoId }) {
         <div 
           className="about-modal-content video-modal-content" 
           onClick={(e) => e.stopPropagation()}
-          style={{ maxWidth: '800px', width: '90%' }}
+          style={{ maxWidth: '400px', width: '90%' }}
         >
           <button className="about-modal-close-btn" onClick={onClose} title="Close">
             &times;
@@ -20,7 +20,7 @@ export default function VideoModal({ open, onClose, title, videoId }) {
             <h2>{title}</h2>
           </header>
 
-          <div className="video-container" style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', marginTop: '20px' }}>
+          <div className="video-container" style={{ position: 'relative', paddingBottom: '177.78%', height: 0, overflow: 'hidden', marginTop: '20px', borderRadius: '12px' }}>
             <iframe
               style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
               src={`https://www.youtube.com/embed/${videoId}`}
