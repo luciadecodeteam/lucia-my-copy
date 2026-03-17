@@ -94,6 +94,29 @@ a {
   gap: 10px;
 }
 
+.nav-link {
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .nav-link {
+    font-size: 0.8rem;
+    padding: 6px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-actions {
+    gap: 5px;
+  }
+  .nav-link {
+    font-size: 0.75rem;
+    padding: 4px 6px;
+  }
+}
+
 /* Buttons */
 .btn {
   appearance: none;

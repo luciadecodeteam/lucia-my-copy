@@ -2,11 +2,15 @@ import React, { useState } from 'react';
 import { useAuthToken } from '../hooks/useAuthToken';
 import StatusBar from './StatusBar';
 import Sidebar from './Sidebar';
+import VideoModal from './VideoModal';
+import AboutModal from './AboutModal';
 
 function AppShell({ children }) {
   // keep hook for future use; top-right header remains blank per spec
   const { user } = useAuthToken();
   const [open, setOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [howToUseOpen, setHowToUseOpen] = useState(false);
 
   return (
     <div className="app-shell">
@@ -14,9 +18,12 @@ function AppShell({ children }) {
         <button className="btn sidebar-toggle" onClick={() => setOpen(s => !s)}>☰</button>
         <div className="brand">
           <img src="/images/lucia-logo.svg" alt="L.U.C.I.A." />
-        <div className="brand-title">L.U.C.I.A. <span className="dot"/></div>
+          <div className="brand-title">L.U.C.I.A. <span className="dot"/></div>
         </div>
-        <div className="header-actions">{/* intentionally empty */}</div>
+        <div className="header-actions">
+          <button className="btn ghost nav-link" onClick={() => setAboutOpen(true)}>About L.U.C.I.A.</button>
+          <button className="btn ghost nav-link" onClick={() => setHowToUseOpen(true)}>How to use</button>
+        </div>
       </header>
 
       <div className="layout">
@@ -26,6 +33,15 @@ function AppShell({ children }) {
           {children}
         </main>
       </div>
+
+      <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      
+      <VideoModal 
+        open={howToUseOpen} 
+        onClose={() => setHowToUseOpen(false)} 
+        title="How to use L.U.C.I.A." 
+        videoId="dQw4w9WgXcQ" // Replace with actual Tutorial Video ID
+      />
     </div>
   );
 }
