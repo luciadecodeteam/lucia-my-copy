@@ -40,7 +40,7 @@ function AppShell({ children }) {
         open={howToUseOpen} 
         onClose={() => setHowToUseOpen(false)} 
         title="How to use L.U.C.I.A." 
-        videoId="dQw4w9WgXcQ" // Replace with actual Tutorial Video ID
+        videoId="rEhwAlskTX0" // Updated Tutorial Video ID
       />
     </div>
   );
