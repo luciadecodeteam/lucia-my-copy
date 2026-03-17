@@ -92,18 +92,22 @@ a {
   margin-left: auto;
   display: flex;
   gap: 10px;
+  align-items: center; /* Ensure vertical alignment */
 }
 
 .nav-link {
   font-size: 0.9rem;
   font-weight: 700; /* Bold text */
-  white-space: nowrap;
+  /* Removed white-space: nowrap; to allow wrapping */
   background-color: var(--primary); /* Blue background */
   color: #000; /* Black text */
   padding: 8px 12px;
   border-radius: var(--radius-2);
   transition: all 0.2s ease;
   border: 1px solid transparent; /* Ensure a border for consistency */
+  flex-shrink: 1; /* Allow buttons to shrink */
+  min-width: 0; /* Allow content to shrink below intrinsic size */
+  text-align: center; /* Center text if it wraps */
 }
 
 .nav-link:hover {
@@ -114,18 +118,18 @@ a {
 
 @media (max-width: 600px) {
   .nav-link {
-    font-size: 0.8rem;
-    padding: 6px 8px;
+    font-size: 0.75rem; /* Smaller font */
+    padding: 5px 8px; /* Reduced padding */
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 420px) { /* Even smaller screens */
   .header-actions {
     gap: 5px;
   }
   .nav-link {
-    font-size: 0.75rem;
-    padding: 4px 6px;
+    font-size: 0.65rem; /* Even smaller font */
+    padding: 3px 6px; /* Further reduced padding */
   }
 }
 
