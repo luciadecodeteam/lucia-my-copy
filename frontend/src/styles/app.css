@@ -96,8 +96,20 @@ a {
 
 .nav-link {
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 700; /* Bold text */
   white-space: nowrap;
+  background-color: var(--primary); /* Blue background */
+  color: #000; /* Black text */
+  padding: 8px 12px;
+  border-radius: var(--radius-2);
+  transition: all 0.2s ease;
+  border: 1px solid transparent; /* Ensure a border for consistency */
+}
+
+.nav-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 194, 255, 0.3); /* Add subtle shadow on hover */
+  filter: brightness(1.1); /* Slightly brighter on hover */
 }
 
 @media (max-width: 600px) {

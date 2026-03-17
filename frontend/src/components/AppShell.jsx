@@ -21,8 +21,8 @@ function AppShell({ children }) {
           <div className="brand-title">L.U.C.I.A. <span className="dot"/></div>
         </div>
         <div className="header-actions">
-          <button className="btn ghost nav-link" onClick={() => setAboutOpen(true)}>About L.U.C.I.A.</button>
           <button className="btn ghost nav-link" onClick={() => setHowToUseOpen(true)}>How to use</button>
+          <button className="btn ghost nav-link" onClick={() => setAboutOpen(true)}>About L.U.C.I.A.</button>
         </div>
       </header>
 
