@@ -500,7 +500,12 @@ async function send() {
             <div className="title">Free messages finished</div>
             <div className="desc">Upgrade to keep chatting with L.U.C.I.A..</div>
           </div>
-          <button className="act" type="button" disabled>Upgrade</button>
+          <button className="act" type="button" onClick={() => {
+            const url = new URL(window.location.href);
+            url.searchParams.set('page', 'pricing');
+            window.history.pushState({}, '', url);
+            window.dispatchEvent(new CustomEvent('lucia:navigate-page', { detail: { page: 'pricing' } }));
+          }}>Upgrade</button>
         </div>
       )}
 
