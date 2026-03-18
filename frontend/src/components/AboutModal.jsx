@@ -10,6 +10,15 @@ const Hexagon = () => (
 export default function AboutModal({ open, onClose }) {
   if (!open) return null;
 
+  const navigateToPrivacy = (e) => {
+    e.stopPropagation(); // Prevent the modal from closing
+    onClose(); // Close the AboutModal
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', 'privacy');
+    window.history.pushState({}, '', url);
+    window.dispatchEvent(new CustomEvent('lucia:navigate-page', { detail: { page: 'privacy' } }));
+  };
+
   return (
     <div className="about-modal-overlay" onClick={onClose}>
       <div className="about-modal-scroll-container">
@@ -70,7 +79,10 @@ export default function AboutModal({ open, onClose }) {
               <p>
                 What you write in L.U.C.I.A is not used to expose you or build personal profiles.*<br/>
                 It's processed only to provide context and a response.<br/>
-                <em>*Technical details explained separately.</em>
+                <em>
+                  *Technical details explained in our{' '}
+                  <a href="#" onClick={navigateToPrivacy} className="privacy-link">Privacy Policy</a>.
+                </em>
               </p>
             </div>
              <img src="/images/Image 4.png" alt="Symbol of digital privacy and data protection" className="about-image right" />
