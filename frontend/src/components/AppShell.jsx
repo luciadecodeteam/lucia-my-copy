@@ -35,15 +35,16 @@ function AppShell({ children }) {
       </div>
 
       <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
-      
+
       <VideoModal 
         open={howToUseOpen} 
         onClose={() => setHowToUseOpen(false)} 
         title="How to use L.U.C.I.A." 
-        videoId="rEhwAlskTX0" // Updated Tutorial Video ID
+        videoId="NxNkr6fGnDM" // Updated Tutorial Video ID
       />
     </div>
   );
 }
 
 export default AppShell;
+
