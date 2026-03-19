@@ -9,7 +9,7 @@ const Hexagon = () => (
 
 export default function AboutModal({ open, onClose }) {
   if (!open) return null;
-
+//hi
   const navigateToPrivacy = (e) => {
     e.stopPropagation(); // Prevent the modal from closing
     onClose(); // Close the AboutModal
