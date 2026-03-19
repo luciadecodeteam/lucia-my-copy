@@ -4,14 +4,15 @@ import {
   auth,
   createConversation, db,
   newConversationId, createConversationWithId,
-  softDeleteConversation, setConversationTitle, setConversationFolder
+  softDeleteConversation, setConversationTitle, setConversationFolder,
+  syncDEK, recoverDEK, getUserData
 } from '../firebase'
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore'
 import '../styles/slots.css'
 import '../styles/sidebar.css'
 import AboutModal from './AboutModal'
 
-function InlineModal({ title, value, setValue, onCancel, onSave, placeholder, okLabel = "OK" }) {
+function InlineModal({ title, value, setValue, onCancel, onSave, placeholder, okLabel = "OK", type = "text" }) {
   function onKey(e) {
     if (e.key === 'Enter') onSave()
     if (e.key === 'Escape') onCancel()
@@ -23,7 +24,7 @@ function InlineModal({ title, value, setValue, onCancel, onSave, placeholder, ok
         <input
           autoFocus
           className="slotmodal-input"
-          type="text"
+          type={type}
           value={value}
           placeholder={placeholder}
           onChange={e => setValue(e.target.value)}
@@ -49,6 +50,10 @@ export default function Sidebar({ open, onClose }) {
   const [openKebabFor, setOpenKebabFor] = useState(null)
   const kebabRef = useRef(null)
 
+  const [hasSyncKey, setHasSyncKey] = useState(false)
+  const [syncModal, setSyncModal] = useState(null) // 'set' | 'recover'
+  const [syncValue, setSyncValue] = useState('')
+
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'User'
   const email = user?.email || ''
   const currentCid = new URLSearchParams(window.location.search).get('c') || null
@@ -61,6 +66,14 @@ export default function Sidebar({ open, onClose }) {
     window.addEventListener('click', onClick)
     return () => window.removeEventListener('click', onClick)
   }, [])
+
+  useEffect(() => {
+    if (!user?.uid) return
+    (async () => {
+      const data = await getUserData(user.uid)
+      setHasSyncKey(!!data?.sync?.encryptedDEK)
+    })()
+  }, [user?.uid])
 
   useEffect(() => {
     if (!user?.uid) return
@@ -186,6 +199,25 @@ export default function Sidebar({ open, onClose }) {
     setNewFolderFor(null)
   }
 
+  async function confirmSync() {
+    if (!user?.uid || !syncValue) return
+    try {
+      if (syncModal === 'set') {
+        await syncDEK(user.uid, syncValue)
+        setHasSyncKey(true)
+        alert('Access Key set successfully! You can now use this key on other devices.')
+      } else {
+        await recoverDEK(user.uid, syncValue)
+        alert('Chats unlocked successfully!')
+        window.location.reload() // Reload to refresh all decrypted titles/messages
+      }
+      setSyncModal(null)
+      setSyncValue('')
+    } catch (e) {
+      alert(e.message)
+    }
+  }
+
   function navigateToPage(page) {
     setMenuOpen(false)
     const url = new URL(window.location.href)
@@ -305,6 +337,19 @@ export default function Sidebar({ open, onClose }) {
                   <button className="user-menu-item" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setAboutModalOpen(true); }}>
                     About L.U.C.I.A
                   </button>
+
+                  <div className="menu-sep"></div>
+                  {hasSyncKey ? (
+                    <button className="user-menu-item" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setSyncModal('recover'); setSyncValue(''); }}>
+                      🔓 Unlock Chats on this device
+                    </button>
+                  ) : (
+                    <button className="user-menu-item" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setSyncModal('set'); setSyncValue(''); }}>
+                      🔑 Set Access Key (Sync Chats)
+                    </button>
+                  )}
+
+                  <div className="menu-sep"></div>
                   <button className="user-menu-item" onClick={(e) => { e.stopPropagation(); navigateToPage('terms') }}>
                     Terms of Service
                   </button>
@@ -350,6 +395,18 @@ export default function Sidebar({ open, onClose }) {
           onCancel={() => setNewFolderFor(null)}
           onSave={confirmNewFolder}
           okLabel="Create"
+        />
+      )}
+      {syncModal && (
+        <InlineModal
+          title={syncModal === 'set' ? "Set Access Key" : "Unlock Chats"}
+          value={syncValue}
+          setValue={setSyncValue}
+          type="password"
+          placeholder="Enter your secret passphrase"
+          onCancel={() => setSyncModal(null)}
+          onSave={confirmSync}
+          okLabel={syncModal === 'set' ? "Set Key" : "Unlock"}
         />
       )}
     </aside>

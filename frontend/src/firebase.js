@@ -78,6 +78,79 @@ async function getOrCreateDEK(uid) {
   return key;
 }
 
+/**
+ * NEW: E2EE Sync Logic
+ * This allows a user to "lock" their DEK with a passphrase and store it in Firestore.
+ * Another device can then "unlock" it using the same passphrase.
+ */
+
+async function deriveMasterKey(passphrase, salt) {
+  const pwBuf = TEXT.enc.encode(passphrase);
+  const saltBuf = fromBase64(salt);
+  
+  const baseKey = await crypto.subtle.importKey(
+    'raw', pwBuf, 'PBKDF2', false, ['deriveKey']
+  );
+  
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: saltBuf, iterations: 100000, hash: 'SHA-256' },
+    baseKey,
+    { name: 'AES-GCM', length: 256 },
+    true,
+    ['encrypt', 'decrypt']
+  );
+}
+
+async function syncDEK(uid, passphrase) {
+  const k = dekStorageKey(uid);
+  const localRawB64 = localStorage.getItem(k);
+  if (!localRawB64) throw new Error('No local key to sync');
+  
+  const salt = toBase64(crypto.getRandomValues(new Uint8Array(16)));
+  const masterKey = await deriveMasterKey(passphrase, salt);
+  
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encryptedDEK = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    masterKey,
+    fromBase64(localRawB64)
+  );
+  
+  const ref = doc(db, 'users', uid);
+  await updateDoc(ref, {
+    sync: {
+      encryptedDEK: toBase64(encryptedDEK),
+      iv: toBase64(iv),
+      salt: salt,
+      updatedAt: serverTimestamp()
+    }
+  });
+}
+
+async function recoverDEK(uid, passphrase) {
+  const snap = await getDoc(doc(db, 'users', uid));
+  if (!snap.exists()) throw new Error('User not found');
+  const data = snap.data();
+  if (!data.sync?.encryptedDEK) throw new Error('No synced key found');
+  
+  const { encryptedDEK, iv, salt } = data.sync;
+  const masterKey = await deriveMasterKey(passphrase, salt);
+  
+  try {
+    const decryptedDEK = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: fromBase64(iv) },
+      masterKey,
+      fromBase64(encryptedDEK)
+    );
+    
+    const k = dekStorageKey(uid);
+    localStorage.setItem(k, toBase64(decryptedDEK));
+    return true;
+  } catch (e) {
+    throw new Error('Invalid Access Key');
+  }
+}
+
 async function encryptForUser(uid, text) {
   const dek = await getOrCreateDEK(uid);
   const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -309,5 +382,6 @@ export {
   registerWithEmail, loginWithEmail,
   markCourtesyUsed,
   encryptTitle, decryptTitle,
-  getDecryptedSummary, saveEncryptedSummary
+  getDecryptedSummary, saveEncryptedSummary,
+  syncDEK, recoverDEK
 };
