@@ -97,6 +97,49 @@ export default function AboutModal({ open, onClose }) {
             </div>
           </section>
 
+          <div className="about-videos-container">
+            <h3>Learn more about L.U.C.I.A.</h3>
+            
+            {/* Vertical Shorts */}
+            <div className="about-videos-grid vertical">
+              {[
+                { id: 'qMVw0RfX4Y4', title: 'Video 1' },
+                { id: '4wwbRNwXjJA', title: 'Video 2' },
+                { id: 'YwLs7ZILmAY', title: 'Video 3' }
+              ].map(video => (
+                <div key={video.id} className="video-wrapper vertical">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${video.id}`}
+                    title={video.title}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              ))}
+            </div>
+
+            {/* Horizontal Videos */}
+            <div className="about-videos-grid horizontal">
+              {[
+                { id: 'ASHWvj-UdDg', title: 'Video 4' },
+                { id: 'vFRtqJQ3rYo', title: 'Video 5' },
+                { id: 'liKd2bqZECw', title: 'Video 6' },
+                { id: '_Rvo6mLRom0', title: 'Video 7' }
+              ].map(video => (
+                <div key={video.id} className="video-wrapper horizontal">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${video.id}`}
+                    title={video.title}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <footer className="about-modal-footer">
             L.U.C.I.A DECODE
           </footer>

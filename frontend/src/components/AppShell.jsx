@@ -43,7 +43,7 @@ function AppShell({ children }) {
         videos={[
           {
             title: "Tutorial: How to Register and Log-In with L.U.C.I.A",
-            videoId: "77tfNr9JMWI"
+            videoId: "fIm498tOUa4"
           },
           {
             title: "Tutorial: How to Use L.U.C.I.A. with Minimal Input.",
