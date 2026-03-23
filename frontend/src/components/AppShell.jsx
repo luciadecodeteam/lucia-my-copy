@@ -39,8 +39,17 @@ function AppShell({ children }) {
       <VideoModal 
         open={howToUseOpen} 
         onClose={() => setHowToUseOpen(false)} 
-        title="How to use L.U.C.I.A." 
-        videoId="NxNkr6fGnDM" // Updated Tutorial Video ID
+        title="L.U.C.I.A. Tutorials" 
+        videos={[
+          {
+            title: "Tutorial: How to Register and Log-In with L.U.C.I.A",
+            videoId: "77tfNr9JMWI"
+          },
+          {
+            title: "Tutorial: How to Use L.U.C.I.A. with Minimal Input.",
+            videoId: "F9efVBMmDLQ"
+          }
+        ]}
       />
     </div>
   );
