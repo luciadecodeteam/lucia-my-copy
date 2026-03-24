@@ -125,7 +125,8 @@ export default function AboutModal({ open, onClose }) {
                 { id: 'ASHWvj-UdDg', title: 'Video 4' },
                 { id: 'vFRtqJQ3rYo', title: 'Video 5' },
                 { id: 'liKd2bqZECw', title: 'Video 6' },
-                { id: '_Rvo6mLRom0', title: 'Video 7' }
+                { id: '_Rvo6mLRom0', title: 'Video 7' },
+                { id: 'FksCUUiEc2Q', title: 'Video 8' }
               ].map(video => (
                 <div key={video.id} className="video-wrapper horizontal">
                   <iframe
