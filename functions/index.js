@@ -7,7 +7,7 @@ const app = initializeApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// ----- Config -----
+// ----- Config ----- //////////
 const REGION = process.env.FUNCTIONS_REGION || "europe-west3";
 const MAIL_COLLECTION = process.env.MAIL_COLLECTION || "mail";
 
