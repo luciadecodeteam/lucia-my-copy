@@ -341,9 +341,11 @@ export default function Sidebar({ open, onClose }) {
                   <div className="menu-sep"></div>
                   {hasSyncKey ? (
                     <button className="user-menu-item" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setSyncModal('recover'); setSyncValue(''); }}>
-                      🔓 Unlock Chats on this device
-                    </button>
-                  ) : (
+                                        <svg width="18" height="18" viewBox="0 0 24 24" className="glowing-dot" aria-hidden="true">
+                                          <circle cx="12" cy="12" r="6" fill="currentColor" />
+                                        </svg>
+                                        Unlock Chats on this device
+                                      </button>                  ) : (
                     <button className="user-menu-item" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setSyncModal('set'); setSyncValue(''); }}>
                       🔑 Set Access Key (Sync Chats)
                     </button>

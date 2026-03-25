@@ -345,6 +345,19 @@ a {
   display: inline-block;
 }
 
+.glowing-dot {
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 8px; /* Space between dot and text */
+  color: var(--primary); /* Use primary color */
+}
+
+.glowing-dot circle {
+  box-shadow: 0 0 14px var(--primary); /* Glowing effect */
+}
+
 .ok {
   background: #20d37a;
   box-shadow: 0 0 10px #20d37a99;
