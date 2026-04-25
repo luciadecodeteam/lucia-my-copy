@@ -1,5 +1,5 @@
 // src/lib/api.js — Frontend-only CORS bypass: send text/plain to avoid preflight
-// Calls: https://lt2masjrrscsh556e35szjp4u40yaifr.lambda-url.eu-west-1.on.aws/api/pay/checkout
+// Checkout function URL is managed via VITE_CHECKOUT_FUNCTION_URL env var
 
 export async function getIdToken() {
   const { auth } = await import("../firebase");
@@ -16,12 +16,12 @@ function normalizePath(pathname) { return pathname ? pathname.replace(/\/+$/, ""
 
 // ---------- CHAT URL (unchanged) ----------
 export function chatUrl() {
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://lucia-backend-seven.vercel.app';
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
   return `${BACKEND_URL}/api/chat`;
 }
 
 // ---------- PAYMENTS (hard-pinned) ----------
-const CHECKOUT_FUNCTION_URL = "https://lt2masjrrscsh556e35szjp4u40yaifr.lambda-url.eu-west-1.on.aws";
+const CHECKOUT_FUNCTION_URL = import.meta.env.VITE_CHECKOUT_FUNCTION_URL;
 
 export function apiBaseUrl() {
   return CHECKOUT_FUNCTION_URL;
@@ -90,7 +90,7 @@ export async function createPortalSession({ uid, email }) {
 
 export async function cancelSubscription({ uid }) {
   const token = await getIdToken();
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://lucia-backend-seven.vercel.app';
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
   
   const res = await fetch(`${BACKEND_URL}/api/chat/cancel-subscription`, {
     method: 'POST',
