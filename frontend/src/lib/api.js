@@ -1,4 +1,4 @@
-// src/lib/api.js — Frontend-only CORS bypass: send text/plain to avoid preflight
+// src/lib/api.js
 
 export async function getIdToken() {
   const { auth } = await import("../firebase");
@@ -6,48 +6,52 @@ export async function getIdToken() {
   return u ? await u.getIdToken() : null;
 }
 
-const LIVE_STRIPE_PUBLISHABLE_KEY =
-  "pk_live_51S1C5h2NCNcgXLO1oeZdRA6lXH6NHLi5wBDVVSoGwPCLxweZ2Xp8dZTee2QgrzPwwXwhalZAcY1xUeKNmKUxb5gq00tf0go3ih";
-
 // ---------- helpers ----------
-function trimTrailingSlashes(v) { return (v || "").replace(/\/+$/, ""); }
-function normalizePath(pathname) { return pathname ? pathname.replace(/\/+$/, "") : ""; }
+function trimSlashes(v) { return (v || "").replace(/\/+$/, ""); }
 
-// ---------- CHAT URL (unchanged) ----------
-export function chatUrl() {
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://lucia-backend-seven.vercel.app';
-  return `${BACKEND_URL}/api/chat`;
+// ---------- URLs from env ----------
+function checkoutLambdaUrl() {
+  const url = import.meta.env.VITE_CHECKOUT_LAMBDA_URL;
+  if (!url) throw new Error("VITE_CHECKOUT_LAMBDA_URL is not set");
+  return trimSlashes(url);
 }
 
-// ---------- PAYMENTS (hard-pinned) ----------
-const CHECKOUT_FUNCTION_URL = "https://lt2masjrrscsh556e35szjp4u40yaifr.lambda-url.eu-west-1.on.aws";
-
-export function apiBaseUrl() {
-  return CHECKOUT_FUNCTION_URL;
+function backendUrl() {
+  const url = import.meta.env.VITE_BACKEND_URL;
+  if (!url) throw new Error("VITE_BACKEND_URL is not set");
+  return trimSlashes(url);
 }
-function checkoutEndpoint() { return `${trimTrailingSlashes(apiBaseUrl())}/api/pay/checkout`; }
-function portalEndpoint()   { return `${trimTrailingSlashes(apiBaseUrl())}/api/pay/portal`; }
 
-// ---------- Stripe helpers ----------
+// ---------- Endpoints ----------
+export function chatUrl()        { return `${backendUrl()}/api/chat`; }
+function checkoutEndpoint()      { return `${checkoutLambdaUrl()}/api/pay/checkout`; }
+function portalEndpoint()        { return `${checkoutLambdaUrl()}/api/pay/portal`; }
+
+// ---------- Stripe ----------
 export function stripePublishableKey() {
-  return (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || LIVE_STRIPE_PUBLISHABLE_KEY).trim();
+  const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+  if (!key) throw new Error("VITE_STRIPE_PUBLISHABLE_KEY is not set");
+  return key.trim();
 }
-export function stripeEnabled() { return Boolean(stripePublishableKey()); }
+export function stripeEnabled() {
+  try { return Boolean(stripePublishableKey()); }
+  catch { return false; }
+}
 
-/**
- * Create Stripe Checkout session (no-preflight; text/plain)
- */
+// ---------- Checkout ----------
 export async function startCheckout(arg, info = {}) {
   let price, quantity = 1, metadata = {};
+
   if (typeof arg === "string") {
     price = arg;
-    if (info?.uid) metadata.uid = info.uid;
+    if (info?.uid)   metadata.uid   = info.uid;
     if (info?.email) metadata.email = info.email;
   } else if (arg && typeof arg === "object") {
-    price = arg.price;
+    price    = arg.price;
     quantity = arg.quantity ?? 1;
     metadata = arg.metadata ?? {};
   }
+
   if (!price || !/^price_/.test(price)) {
     throw new Error("startCheckout expects a Stripe price id (e.g. 'price_...').");
   }
@@ -55,7 +59,6 @@ export async function startCheckout(arg, info = {}) {
   const endpoint = checkoutEndpoint();
   console.log("Calling Stripe checkout:", endpoint);
 
-  // CRUCIAL: text/plain makes the request "simple" → browser skips preflight
   const res = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=UTF-8" },
@@ -66,18 +69,19 @@ export async function startCheckout(arg, info = {}) {
     const text = await res.text().catch(() => "");
     throw new Error(text || `Checkout failed (${res.status})`);
   }
+
   const data = await res.json().catch(() => ({}));
   if (!data?.url) throw new Error("Checkout failed: missing redirect URL");
   window.location.href = data.url;
   return data.url;
 }
 
+// ---------- Portal ----------
 export async function createPortalSession({ uid, email }) {
   const token = await getIdToken();
   const res = await fetch(portalEndpoint(), {
     method: "POST",
     headers: {
-      // portal can stay JSON; if it also trips CORS, switch to text/plain here too
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     },
@@ -87,19 +91,17 @@ export async function createPortalSession({ uid, email }) {
   return res.json();
 }
 
+// ---------- Cancel ----------
 export async function cancelSubscription({ uid }) {
   const token = await getIdToken();
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://lucia-backend-seven.vercel.app';
-  
-  const res = await fetch(`${BACKEND_URL}/api/chat/cancel-subscription`, {
-    method: 'POST',
+  const res = await fetch(`${backendUrl()}/api/chat/cancel-subscription`, {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     },
     body: JSON.stringify({ uid })
   });
-  
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
