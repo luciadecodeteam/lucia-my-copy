@@ -2,9 +2,8 @@
 const router = require('express').Router();
 const crypto = require('crypto');
 
-const CHAT_LAMBDA_URL = process.env.CHAT_LAMBDA_URL;
-const SUMMARIZER_LAMBDA_URL = process.env.SUMMARIZER_LAMBDA_URL;
-const CHECKOUT_FUNCTION_URL = process.env.CHECKOUT_FUNCTION_URL;
+const CHAT_LAMBDA_URL = process.env.CHAT_LAMBDA_URL || 'https://acmjtgoc47eieiii6gksw3bx6u0feemy.lambda-url.eu-west-1.on.aws/';
+const SUMMARIZER_LAMBDA_URL = process.env.SUMMARIZER_LAMBDA_URL || 'https://eyis5ss5ms7gzgar2uadqkm5sm0ixfqc.lambda-url.eu-west-1.on.aws/';
 
 function sanitizeHistory(raw) {
   if (!Array.isArray(raw)) return [];
@@ -174,6 +173,7 @@ router.post('/cancel-subscription', async (req, res) => {
     return res.status(400).json({ error: 'Missing uid' });
   }
 
+  const CHECKOUT_FUNCTION_URL = "https://lt2masjrrscsh556e35szjp4u40yaifr.lambda-url.eu-west-1.on.aws";
   const cancelPayload = { uid };
 
   try {
