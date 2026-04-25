@@ -173,7 +173,7 @@ router.post('/cancel-subscription', async (req, res) => {
     return res.status(400).json({ error: 'Missing uid' });
   }
 
-  const CHECKOUT_FUNCTION_URL = "https://lt2masjrrscsh556e35szjp4u40yaifr.lambda-url.eu-west-1.on.aws";
+  const CHECKOUT_FUNCTION_URL = process.env.CHECKOUT_FUNCTION_URL;
   const cancelPayload = { uid };
 
   try {
