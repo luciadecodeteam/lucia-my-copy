@@ -20,8 +20,7 @@ export function chatUrl() {
 }
 
 // ---------- PAYMENTS (hard-pinned) ----------
-
-const CHECKOUT_FUNCTION_URL = process.env.CHECKOUT_FUNCTION_URL;
+const CHECKOUT_FUNCTION_URL = "https://lt2masjrrscsh556e35szjp4u40yaifr.lambda-url.eu-west-1.on.aws";
 
 export function apiBaseUrl() {
   return CHECKOUT_FUNCTION_URL;
